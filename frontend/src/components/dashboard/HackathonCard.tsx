@@ -17,6 +17,7 @@ export interface Hackathon {
   status: 'upcoming' | 'ongoing' | 'completed';
   participants: number;
   submissions: number;
+  uniqueCode: string;
   createdBy: {
     _id: string;
     fullName: string;
@@ -36,14 +37,16 @@ interface HackathonCardProps {
   hackathon: Hackathon;
   onClick: () => void;
   submission?: Submission;
+  showJoinCode?: boolean;
 }
 
 const HackathonCard: React.FC<HackathonCardProps> = ({
   hackathon,
   onClick,
   submission,
+  showJoinCode = false,
 }) => {
-  const { title, description, startDate, endDate, status, participants, submissions, collaborators } = hackathon;
+  const { title, description, startDate, endDate, status, participants, submissions, collaborators, uniqueCode } = hackathon;
   
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 cursor-pointer" onClick={onClick}>
@@ -57,6 +60,13 @@ const HackathonCard: React.FC<HackathonCardProps> = ({
             {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
           </span>
         </div>
+
+        {showJoinCode && uniqueCode && (
+          <div className="mt-3 text-sm">
+            <span className="text-gray-500">Join Code: </span>
+            <span className="font-medium text-indigo-600">{uniqueCode}</span>
+          </div>
+        )}
 
         {participants !== undefined && submissions !== undefined && (
           <div className="flex justify-between mt-3 text-sm text-gray-500">

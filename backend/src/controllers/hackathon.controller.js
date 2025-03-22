@@ -6,12 +6,17 @@ const User = require('../models/user.model');
 // Create a new hackathon
 exports.createHackathon = async (req, res) => {
   try {
-    // Add user ID to request body
+    // Generate a unique code if not provided
+    if (!req.body.uniqueCode) {
+      req.body.uniqueCode = generateUniqueCode();
+    }
+    
+    // Add creator to the hackathon data
     req.body.createdBy = req.user.id;
     
-    // Create hackathon
+    // Create the hackathon
     const hackathon = await Hackathon.create(req.body);
-
+    
     res.status(201).json({
       success: true,
       data: hackathon,
@@ -24,6 +29,16 @@ exports.createHackathon = async (req, res) => {
   }
 };
 
+// Generate a unique 6-character alphanumeric code
+const generateUniqueCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
 // Get all hackathons
 exports.getHackathons = async (req, res) => {
   try {
@@ -31,48 +46,65 @@ exports.getHackathons = async (req, res) => {
     let filter = {};
     
     if (req.user.role === 'student') {
-      // Get all hackathons that match the student's eligibility
-      const student = await User.findById(req.user.id);
-      if (!student) {
-        return res.status(404).json({
-          success: false,
-          message: 'Student not found',
-        });
-      }
-
-      // Find hackathons where student matches eligibility criteria
+      // Get all hackathons
       const allHackathons = await Hackathon.find();
       const eligibleHackathonIds = [];
+      const participatedHackathons = await Participant.find({ userId: req.user.id }).distinct('hackathonId');
       
+      // First, always include hackathons the student is already registered for
+      for (const participatedId of participatedHackathons) {
+        eligibleHackathonIds.push(participatedId);
+      }
+      
+      // For each hackathon, check if student is eligible based on criteria
       for (const hackathon of allHackathons) {
-        let isEligible = true;
-        
+        // Skip if already added (the student is already registered)
+        if (participatedHackathons.includes(hackathon._id.toString())) {
+          continue;
+        }
+
+        // Check if any "codeOnly" criteria exists
+        const hasCodeOnlyCriteria = hackathon.eligibilityCriteria && hackathon.eligibilityCriteria.some(
+          criteria => criteria.criteriaType === 'codeOnly'
+        );
+
+        // If codeOnly criteria exists, student needs to join with code
+        if (hasCodeOnlyCriteria) {
+          continue;
+        }
+
         // If no criteria, everyone is eligible
         if (!hackathon.eligibilityCriteria || hackathon.eligibilityCriteria.length === 0) {
           eligibleHackathonIds.push(hackathon._id);
           continue;
         }
         
-        // Check each criteria
+        // Otherwise, check other criteria
+        const student = await User.findById(req.user.id);
+        if (!student) {
+          continue;
+        }
+        
+        let isEligible = false;
         for (const criteria of hackathon.eligibilityCriteria) {
           if (criteria.criteriaType === 'grade' && criteria.values.length > 0) {
-            if (!criteria.values.includes(student.grade)) {
-              isEligible = false;
+            if (criteria.values.includes(student.grade)) {
+              isEligible = true;
               break;
             }
           } else if (criteria.criteriaType === 'school' && criteria.values.length > 0) {
-            if (!criteria.values.includes(student.schoolCollegeName)) {
-              isEligible = false;
+            if (criteria.values.includes(student.schoolCollegeName)) {
+              isEligible = true;
               break;
             }
           } else if (criteria.criteriaType === 'state' && criteria.values.length > 0) {
-            if (!criteria.values.includes(student.state)) {
-              isEligible = false;
+            if (criteria.values.includes(student.state)) {
+              isEligible = true;
               break;
             }
           } else if (criteria.criteriaType === 'phoneNumbers' && criteria.phoneNumbers.length > 0) {
-            if (!criteria.phoneNumbers.includes(student.phoneNumber)) {
-              isEligible = false;
+            if (criteria.phoneNumbers.includes(student.phoneNumber)) {
+              isEligible = true;
               break;
             }
           }
@@ -156,41 +188,57 @@ exports.getHackathon = async (req, res) => {
       const student = await User.findById(req.user.id);
       let isEligible = true;
       
-      // If hackathon has eligibility criteria, check if student meets them
-      if (hackathon.eligibilityCriteria && hackathon.eligibilityCriteria.length > 0) {
-        isEligible = false; // Default to not eligible until we confirm they meet criteria
-        
-        for (const criteria of hackathon.eligibilityCriteria) {
-          if (criteria.criteriaType === 'grade' && criteria.values.length > 0) {
-            if (criteria.values.includes(student.grade)) {
-              isEligible = true;
-              break;
-            }
-          } else if (criteria.criteriaType === 'school' && criteria.values.length > 0) {
-            if (criteria.values.includes(student.schoolCollegeName)) {
-              isEligible = true;
-              break;
-            }
-          } else if (criteria.criteriaType === 'state' && criteria.values.length > 0) {
-            if (criteria.values.includes(student.state)) {
-              isEligible = true;
-              break;
-            }
-          } else if (criteria.criteriaType === 'phoneNumbers' && criteria.phoneNumbers.length > 0) {
-            if (criteria.phoneNumbers.includes(student.phoneNumber)) {
-              isEligible = true;
-              break;
-            }
-          }
-        }
-      }
-      
-      // Check if hackathon is complete and student participated
+      // Check if user is already a participant
       const isParticipant = await Participant.findOne({ 
         hackathonId: hackathon._id, 
         userId: req.user.id 
       });
       
+      // If they're already a participant, they're eligible
+      if (isParticipant) {
+        isEligible = true;
+      }
+      // If not a participant, check if hackathon has a "codeOnly" criteria
+      else if (hackathon.eligibilityCriteria && hackathon.eligibilityCriteria.length > 0) {
+        const hasCodeOnlyCriteria = hackathon.eligibilityCriteria.some(
+          criteria => criteria.criteriaType === 'codeOnly'
+        );
+        
+        // If there's a codeOnly criteria, student must join with code
+        if (hasCodeOnlyCriteria) {
+          isEligible = false;
+        }
+        // Otherwise, check other criteria
+        else {
+          isEligible = false; // Default to not eligible until we confirm they meet criteria
+          
+          for (const criteria of hackathon.eligibilityCriteria) {
+            if (criteria.criteriaType === 'grade' && criteria.values.length > 0) {
+              if (criteria.values.includes(student.grade)) {
+                isEligible = true;
+                break;
+              }
+            } else if (criteria.criteriaType === 'school' && criteria.values.length > 0) {
+              if (criteria.values.includes(student.schoolCollegeName)) {
+                isEligible = true;
+                break;
+              }
+            } else if (criteria.criteriaType === 'state' && criteria.values.length > 0) {
+              if (criteria.values.includes(student.state)) {
+                isEligible = true;
+                break;
+              }
+            } else if (criteria.criteriaType === 'phoneNumbers' && criteria.phoneNumbers.length > 0) {
+              if (criteria.phoneNumbers.includes(student.phoneNumber)) {
+                isEligible = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Check if hackathon is complete - completed hackathons can be viewed by participants
       const now = new Date();
       const isCompleted = now > hackathon.endDate;
       
@@ -327,10 +375,79 @@ exports.registerParticipant = async (req, res) => {
     // Check if user is already registered
     const existingParticipant = await Participant.findOne({ userId, hackathonId });
     if (existingParticipant) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already registered for this hackathon',
+      // If already registered, just return success
+      return res.status(200).json({
+        success: true,
+        message: 'User is already registered for this hackathon',
+        data: existingParticipant,
       });
+    }
+
+    // For student users, check eligibility
+    if (req.user.role === 'student') {
+      if (req.user.id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Students can only register themselves',
+        });
+      }
+
+      // Check if the hackathon has code-only criteria
+      const hasCodeOnlyCriteria = hackathon.eligibilityCriteria && 
+        hackathon.eligibilityCriteria.some(criteria => criteria.criteriaType === 'codeOnly');
+
+      if (hasCodeOnlyCriteria) {
+        // For code-only hackathons, we need to check if they've joined using the code
+        // This should be done by joining with the code first, which creates a participant record
+        // Since we already checked for existing participants above, if we get here for a code-only
+        // hackathon, it means they haven't joined with the code yet
+        return res.status(403).json({
+          success: false,
+          message: 'This hackathon requires a join code. Please use the join code to participate.',
+        });
+      }
+
+      // For other eligibility types, check if they meet criteria
+      let isEligible = false;
+      
+      // If no criteria, everyone is eligible
+      if (!hackathon.eligibilityCriteria || hackathon.eligibilityCriteria.length === 0) {
+        isEligible = true;
+      } else {
+        const student = await User.findById(userId);
+        
+        // Check each criteria
+        for (const criteria of hackathon.eligibilityCriteria) {
+          if (criteria.criteriaType === 'grade' && criteria.values.length > 0) {
+            if (criteria.values.includes(student.grade)) {
+              isEligible = true;
+              break;
+            }
+          } else if (criteria.criteriaType === 'school' && criteria.values.length > 0) {
+            if (criteria.values.includes(student.schoolCollegeName)) {
+              isEligible = true;
+              break;
+            }
+          } else if (criteria.criteriaType === 'state' && criteria.values.length > 0) {
+            if (criteria.values.includes(student.state)) {
+              isEligible = true;
+              break;
+            }
+          } else if (criteria.criteriaType === 'phoneNumbers' && criteria.phoneNumbers.length > 0) {
+            if (criteria.phoneNumbers.includes(student.phoneNumber)) {
+              isEligible = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (!isEligible) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not eligible for this hackathon',
+        });
+      }
     }
 
     // Register participant
@@ -532,4 +649,85 @@ exports.getCompletedHackathons = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+// Join a hackathon using a unique code
+exports.joinByCode = async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a hackathon code',
+      });
+    }
+    
+    // Find the hackathon with the provided code
+    const hackathon = await Hackathon.findOne({ uniqueCode: code.toUpperCase() });
+    
+    if (!hackathon) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hackathon found with this code',
+      });
+    }
+    
+    const userId = req.user.id;
+    
+    // Check if user is already a participant
+    const existingParticipant = await Participant.findOne({
+      userId,
+      hackathonId: hackathon._id,
+    });
+    
+    if (existingParticipant) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already registered for this hackathon',
+      });
+    }
+    
+    // Register the user as a participant
+    const newParticipant = await Participant.create({
+      userId,
+      hackathonId: hackathon._id,
+    });
+    
+    // Get full hackathon details for the response
+    const hackathonWithCounts = await getHackathonWithCounts(hackathon._id);
+    
+    res.status(200).json({
+      success: true,
+      data: hackathonWithCounts,
+      message: 'Successfully joined the hackathon',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Helper function to get hackathon with counts
+const getHackathonWithCounts = async (hackathonId) => {
+  const hackathon = await Hackathon.findById(hackathonId)
+    .populate({
+      path: 'createdBy',
+      select: 'fullName schoolName',
+    })
+    .populate({
+      path: 'collaborators',
+      select: 'fullName schoolName',
+    });
+
+  const participantCount = await Participant.countDocuments({ hackathonId });
+  const submissionCount = await Submission.countDocuments({ hackathonId });
+
+  return {
+    ...hackathon.toObject(),
+    participants: participantCount,
+    submissions: submissionCount,
+  };
 }; 

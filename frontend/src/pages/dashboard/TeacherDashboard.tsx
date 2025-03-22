@@ -14,6 +14,7 @@ interface Hackathon {
   status: 'upcoming' | 'ongoing' | 'completed';
   participants: number;
   submissions: number;
+  uniqueCode: string;
   createdBy: {
     _id: string;
     fullName: string;
@@ -111,6 +112,7 @@ const TeacherDashboard = () => {
             key={hackathon._id}
             hackathon={hackathon}
             onClick={() => handleCardClick(hackathon._id)}
+            showJoinCode={true}
           />
         ))}
         

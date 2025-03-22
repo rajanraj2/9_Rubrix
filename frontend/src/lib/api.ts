@@ -33,13 +33,14 @@ interface HackathonData {
   description: string;
   startDate: string;
   endDate: string;
+  uniqueCode?: string;
   parameters: Array<{
     name: string;
     weight: number;
     description: string;
   }>;
   eligibilityCriteria?: Array<{
-    criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers';
+    criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers' | 'codeOnly';
     values?: string[];
     phoneNumbers?: string[];
   }>;
@@ -92,6 +93,7 @@ export const hackathonAPI = {
   createHackathon: (data: HackathonData) => api.post('/hackathons', data),
   updateHackathon: (id: string, data: Partial<HackathonData>) => api.put(`/hackathons/${id}`, data),
   deleteHackathon: (id: string) => api.delete(`/hackathons/${id}`),
+  joinByCode: (code: string) => api.post('/hackathons/join-by-code', { code }),
   addCollaborators: (hackathonId: string, collaboratorPhoneNumbers: string[]) => 
     api.post(`/hackathons/${hackathonId}/collaborators`, { collaboratorPhoneNumbers }),
   registerParticipant: (hackathonId: string, userId: string) => 

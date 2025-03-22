@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Save, Trash2, Users, Filter } from 'lucide-react';
+import { Plus, Save, Trash2, Users, Filter, RefreshCw } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import { hackathonAPI } from '../../lib/api';
 
@@ -13,7 +13,7 @@ interface Parameter {
 
 interface EligibilityCriteria {
   id: string;
-  criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers';
+  criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers' | 'codeOnly';
   values: string[];
   phoneNumbers: string[];
 }
@@ -24,6 +24,7 @@ const CreateHackathon: React.FC = () => {
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [uniqueCode, setUniqueCode] = useState('');
   const [collaborators, setCollaborators] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,21 @@ const CreateHackathon: React.FC = () => {
   // Eligibility criteria state
   const [criteria, setCriteria] = useState<EligibilityCriteria[]>([]);
   
+  // Generate a unique code on component mount
+  useEffect(() => {
+    generateUniqueCode();
+  }, []);
+
+  // Function to generate a unique 6-character alphanumeric code
+  const generateUniqueCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setUniqueCode(code);
+  };
+
   const addParameter = () => {
     const newId = (parameters.length + 1).toString();
     setParameters([
@@ -126,8 +142,13 @@ const CreateHackathon: React.FC = () => {
     e.preventDefault();
     
     // Validate form
-    if (!title || !description || !startDate || !endDate) {
+    if (!title || !description || !startDate || !endDate || !uniqueCode) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    if (uniqueCode.length !== 6) {
+      setError('Unique code must be 6 characters');
       return;
     }
 
@@ -153,12 +174,26 @@ const CreateHackathon: React.FC = () => {
         description,
       }));
       
-      // Format eligibility criteria for API
-      const formattedCriteria = criteria.map(({ criteriaType, values, phoneNumbers }) => ({
-        criteriaType,
-        values: criteriaType !== 'phoneNumbers' ? values : [],
-        phoneNumbers: criteriaType === 'phoneNumbers' ? phoneNumbers : [],
-      }));
+      // Format hackathon data for submission
+      const formattedEligibilityCriteria = criteria.map(crit => {
+        if (crit.criteriaType === 'phoneNumbers') {
+          return {
+            criteriaType: crit.criteriaType,
+            phoneNumbers: crit.phoneNumbers.filter(phone => phone.trim() !== '')
+          };
+        } else if (crit.criteriaType === 'codeOnly') {
+          return {
+            criteriaType: crit.criteriaType,
+            values: [],
+            phoneNumbers: []
+          };
+        } else {
+          return {
+            criteriaType: crit.criteriaType,
+            values: crit.values.filter(value => value.trim() !== '')
+          };
+        }
+      });
       
       // Create hackathon
       const response = await hackathonAPI.createHackathon({
@@ -166,8 +201,9 @@ const CreateHackathon: React.FC = () => {
         description,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
+        uniqueCode: uniqueCode.toUpperCase(),
         parameters: formattedParameters,
-        eligibilityCriteria: formattedCriteria,
+        eligibilityCriteria: formattedEligibilityCriteria,
       });
       
       // If collaborators were added, add them to the hackathon
@@ -190,7 +226,7 @@ const CreateHackathon: React.FC = () => {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 
         typeof err === 'object' && err !== null && 'response' in err 
-        ? (err.response as any)?.data?.message 
+        ? ((err.response as { data?: { message?: string } })?.data?.message || 'Failed to create hackathon')
         : 'Failed to create hackathon. Please try again.';
       setError(errorMessage);
     } finally {
@@ -251,6 +287,38 @@ const CreateHackathon: React.FC = () => {
               className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="e.g. 1234567890, 9876543210"
             />
+          </div>
+        );
+      case 'codeOnly':
+        return (
+          <div className="mt-2">
+            <p className="text-sm text-gray-600">
+              Only students with the unique join code will be able to register for this hackathon.
+            </p>
+            <div className="mt-2 flex items-center">
+              <div className="font-mono text-sm bg-gray-100 px-3 py-1 rounded border border-gray-300">
+                {uniqueCode}
+              </div>
+              <button 
+                type="button"
+                onClick={() => navigator.clipboard.writeText(uniqueCode)}
+                className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                title="Copy code"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </button>
+              <button 
+                type="button"
+                onClick={generateUniqueCode}
+                className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Regenerate
+              </button>
+            </div>
           </div>
         );
       default:
@@ -337,6 +405,46 @@ const CreateHackathon: React.FC = () => {
                   />
                 </div>
               </div>
+
+              <div>
+                <label htmlFor="uniqueCode" className="block text-sm font-medium text-gray-700">
+                  Unique Participation Code *
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    id="uniqueCode"
+                    value={uniqueCode}
+                    onChange={(e) => setUniqueCode(e.target.value.toUpperCase())}
+                    className="flex-1 block w-full border border-gray-300 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Unique 6-character code"
+                    maxLength={6}
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(uniqueCode)}
+                    className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                    title="Copy code"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generateUniqueCode}
+                    className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-500 hover:bg-gray-100"
+                    title="Generate new code"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  Students will use this code to join your hackathon
+                </p>
+              </div>
             </div>
           </div>
 
@@ -388,13 +496,14 @@ const CreateHackathon: React.FC = () => {
                       <div className="flex-1">
                         <select
                           value={crit.criteriaType}
-                          onChange={(e) => updateCriteria(crit.id, 'criteriaType', e.target.value as 'grade' | 'school' | 'state' | 'phoneNumbers')}
+                          onChange={(e) => updateCriteria(crit.id, 'criteriaType', e.target.value as 'grade' | 'school' | 'state' | 'phoneNumbers' | 'codeOnly')}
                           className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         >
                           <option value="grade">Filter by Grade</option>
                           <option value="school">Filter by School</option>
                           <option value="state">Filter by State</option>
                           <option value="phoneNumbers">Specific Phone Numbers</option>
+                          <option value="codeOnly">Code Only</option>
                         </select>
                         
                         {renderCriteriaInputs(crit)}

@@ -6,18 +6,29 @@ A comprehensive platform for managing hackathons, enabling students to participa
 
 ### Student Features
 - Register and create a student account
-- Browse available hackathons
-- Register for hackathons
+- Join hackathons through uniquely shared codes or through regular registration
 - Submit projects with files and descriptions
 - View submission status and feedback
 
 ### Teacher Features
 - Register and create a teacher account
 - Create and manage hackathons
-- Set evaluation parameters and eligibility criteria
+- Control access to hackathons through eligibility criteria including:
+  - Grade-based access
+  - School-based access
+  - State/region-based access
+  - Code-only access (restricting access to only those with the unique code)
+- Generate and share unique codes for controlling hackathon access
+- Set evaluation parameters
 - Review and evaluate student submissions
 - Shortlist promising submissions
 - Access leaderboards
+
+## Key Security Features
+- Flexible access control: Teachers can choose between open registration or code-only registration
+- Code-based access: When "Code-only" eligibility is selected, students need a valid code to join
+- Role-based visibility: Join codes are only visible to teachers who created the hackathon or are collaborators 
+- Automatic registration: Students are automatically registered as participants when joining with a valid code
 
 ## Tech Stack
 
@@ -96,7 +107,7 @@ npm run dev
 - `GET /api/auth/me` - Get current user
 
 ### Hackathons
-- `GET /api/hackathons` - Get all hackathons
+- `GET /api/hackathons` - Get all hackathons (for teachers) or joined hackathons (for students)
 - `GET /api/hackathons/completed` - Get completed hackathons
 - `GET /api/hackathons/:id` - Get a specific hackathon
 - `POST /api/hackathons` - Create a hackathon
@@ -108,6 +119,7 @@ npm run dev
 - `GET /api/hackathons/:id/leaderboard` - Get leaderboard
 - `GET /api/hackathons/:id/submissions` - Get all submissions
 - `GET /api/hackathons/:id/shortlisted` - Get shortlisted submissions
+- `POST /api/hackathons/join-by-code` - Join a hackathon using a unique code (student exclusive)
 
 ### Submissions
 - `POST /api/submissions` - Create a submission

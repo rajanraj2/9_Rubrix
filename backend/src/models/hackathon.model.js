@@ -20,7 +20,7 @@ const parameterSchema = new mongoose.Schema({
 const eligibilityCriteriaSchema = new mongoose.Schema({
   criteriaType: {
     type: String,
-    enum: ['grade', 'school', 'state', 'phoneNumbers'],
+    enum: ['grade', 'school', 'state', 'phoneNumbers', 'codeOnly'],
     required: [true, 'Criteria type is required'],
   },
   // For grade, school, state criteria
@@ -64,6 +64,14 @@ const hackathonSchema = new mongoose.Schema({
   endDate: {
     type: Date,
     required: [true, 'End date is required'],
+  },
+  uniqueCode: {
+    type: String,
+    required: [true, 'Unique code is required'],
+    trim: true,
+    unique: true,
+    maxlength: [6, 'Unique code cannot exceed 6 characters'],
+    minlength: [6, 'Unique code must be 6 characters'],
   },
   parameters: {
     type: [parameterSchema],

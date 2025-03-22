@@ -9,7 +9,8 @@ const {
   getParticipants,
   getLeaderboard,
   addCollaborators,
-  getCompletedHackathons
+  getCompletedHackathons,
+  joinByCode
 } = require('../controllers/hackathon.controller');
 const { 
   getSubmissions,
@@ -27,6 +28,7 @@ router.use(protect);
 router.get('/', getHackathons);
 router.get('/completed', getCompletedHackathons);
 router.get('/:id', getHackathon);
+router.post('/join-by-code', joinByCode);
 router.post('/:id/participants', registerParticipant);
 router.get('/:id/leaderboard', getLeaderboard);
 
