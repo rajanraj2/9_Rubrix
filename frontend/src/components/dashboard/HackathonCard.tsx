@@ -14,7 +14,9 @@ interface HackathonCardProps {
   description: string;
   startDate: string;
   endDate: string;
-  status: 'ongoing' | 'completed';
+  status: 'upcoming' | 'ongoing' | 'completed';
+  participants?: number;
+  submissions?: number;
   submission?: Submission;
 }
 
@@ -24,6 +26,8 @@ const HackathonCard: React.FC<HackathonCardProps> = ({
   startDate,
   endDate,
   status,
+  participants,
+  submissions,
   submission,
 }) => {
   return (
@@ -38,6 +42,13 @@ const HackathonCard: React.FC<HackathonCardProps> = ({
             {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
           </span>
         </div>
+
+        {participants !== undefined && submissions !== undefined && (
+          <div className="flex justify-between mt-3 text-sm text-gray-500">
+            <div>Participants: {participants}</div>
+            <div>Submissions: {submissions}</div>
+          </div>
+        )}
 
         {status === 'completed' && submission && (
           <div className="mt-4 pt-4 border-t border-gray-200">
@@ -57,10 +68,16 @@ const HackathonCard: React.FC<HackathonCardProps> = ({
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               status === 'ongoing'
                 ? 'bg-green-100 text-green-800'
+                : status === 'upcoming'
+                ? 'bg-blue-100 text-blue-800'
                 : 'bg-gray-100 text-gray-800'
             }`}
           >
-            {status === 'ongoing' ? 'In Progress' : 'Completed'}
+            {status === 'ongoing' 
+              ? 'In Progress' 
+              : status === 'upcoming'
+              ? 'Upcoming'
+              : 'Completed'}
           </span>
         </div>
       </div>
