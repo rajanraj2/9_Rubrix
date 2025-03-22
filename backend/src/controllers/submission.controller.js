@@ -5,7 +5,7 @@ const Participant = require('../models/participant.model');
 // Create a submission
 exports.createSubmission = async (req, res) => {
   try {
-    const { hackathonId, submissionText, files } = req.body;
+    const { hackathonId, submissionText } = req.body;
     const userId = req.user.id;
     
     // Check if hackathon exists
@@ -43,6 +43,13 @@ exports.createSubmission = async (req, res) => {
         message: 'You have already submitted for this hackathon',
       });
     }
+    
+    // Process uploaded files
+    const files = req.files ? req.files.map(file => ({
+      filename: file.originalname,
+      path: file.path,
+      mimetype: file.mimetype,
+    })) : [];
     
     // Create submission
     const submission = await Submission.create({

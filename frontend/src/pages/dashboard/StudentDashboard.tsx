@@ -1,70 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Trophy } from 'lucide-react';
+import { Calendar, CheckCircle } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import HackathonCard from '../../components/dashboard/HackathonCard';
+import { hackathonAPI } from '../../lib/api';
+import { Hackathon } from '../../components/dashboard/HackathonCard';
 
-// Sample data - in a real app, you would fetch this from your API
-const SAMPLE_ONGOING_HACKATHONS = [
-  {
-    id: '1',
-    title: 'AI Innovation Challenge',
-    description: 'Create innovative solutions using artificial intelligence and machine learning to solve real-world problems.',
-    startDate: '2024-03-15',
-    endDate: '2024-04-15',
-    status: 'ongoing' as const,
-  },
-  {
-    id: '2',
-    title: 'Web3 Development Hackathon',
-    description: 'Build decentralized applications using blockchain technology and smart contracts.',
-    startDate: '2024-03-20',
-    endDate: '2024-04-20',
-    status: 'ongoing' as const,
-  },
-];
-
-const SAMPLE_COMPLETED_HACKATHONS = [
-  {
-    id: '3',
-    title: 'Mobile App Challenge',
-    description: 'Design and develop mobile applications that address community needs.',
-    startDate: '2024-02-01',
-    endDate: '2024-03-01',
-    status: 'completed' as const,
-    submission: {
-      id: 'sub-1',
-      position: 5,
-      score: 85,
-      feedback: 'Excellent work on the UI/UX. The implementation is solid and well-documented.',
-    },
-  },
-  {
-    id: '4',
-    title: 'Data Science Competition',
-    description: 'Analyze large datasets to derive meaningful insights and predictions.',
-    startDate: '2024-01-15',
-    endDate: '2024-02-15',
-    status: 'completed' as const,
-    submission: {
-      id: 'sub-2',
-      position: 12,
-      score: 78,
-      feedback: 'Good analysis but could improve on visualization aspects.',
-    },
-  },
-];
+type TabType = 'active' | 'completed';
 
 const StudentDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ongoing' | 'completed'>('ongoing');
   const navigate = useNavigate();
+  const [activeHackathons, setActiveHackathons] = useState<Hackathon[]>([]);
+  const [completedHackathons, setCompletedHackathons] = useState<Hackathon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('active');
 
-  const handleCardClick = (hackathonId: string, status: 'ongoing' | 'completed') => {
-    if (status === 'ongoing') {
-      navigate(`/dashboard/student/hackathon/${hackathonId}`);
-    } else {
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch active hackathons (the API will filter based on eligibility)
+        const activeResponse = await hackathonAPI.getAllHackathons();
+        setActiveHackathons(activeResponse.data.data.filter(
+          (h: Hackathon) => h.status === 'upcoming' || h.status === 'ongoing'
+        ));
+        
+        // Fetch completed hackathons that the student participated in
+        const completedResponse = await hackathonAPI.getCompletedHackathons();
+        setCompletedHackathons(completedResponse.data.data);
+      } catch (err) {
+        console.error('Error fetching hackathons:', err);
+        setError('Failed to load hackathons. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHackathons();
+  }, []);
+
+  const handleCardClick = (hackathonId: string) => {
+    const hackathon = [...activeHackathons, ...completedHackathons].find(h => h._id === hackathonId);
+    if (!hackathon) return;
+
+    if (hackathon.status === 'completed') {
       navigate(`/dashboard/student/hackathon/${hackathonId}/submission`);
+    } else {
+      navigate(`/dashboard/student/hackathon/${hackathonId}`);
     }
+  };
+
+  const renderHackathons = () => {
+    const hackathons = activeTab === 'active' ? activeHackathons : completedHackathons;
+    
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-red-50 text-red-600 p-4 rounded-md">
+          {error}
+        </div>
+      );
+    }
+
+    if (hackathons.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <p className="text-gray-500 mb-4">
+            {activeTab === 'active' 
+              ? "You don't have any active hackathons available." 
+              : "You haven't participated in any completed hackathons yet."}
+          </p>
+          {activeTab === 'active' && (
+            <p className="text-sm text-gray-500">
+              Check back later for new hackathons you're eligible to participate in!
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {hackathons.map((hackathon) => (
+          <HackathonCard
+            key={hackathon._id}
+            hackathon={hackathon}
+            onClick={() => handleCardClick(hackathon._id)}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -72,83 +107,44 @@ const StudentDashboard: React.FC = () => {
       <Sidebar role="student" />
       <main className="flex-1 p-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">My Hackathons</h1>
-          <p className="text-gray-600 mt-1">View and manage your hackathon participations</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Student Dashboard</h1>
+          <p className="text-gray-600 mt-1">Explore hackathons and manage your submissions</p>
         </div>
 
-        <div className="mb-6">
-          <nav className="flex space-x-4" aria-label="Tabs">
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('ongoing')}
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                activeTab === 'ongoing'
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-500 hover:text-gray-700'
+              className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'active'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+              onClick={() => setActiveTab('active')}
             >
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4" />
-                <span>Ongoing Hackathons</span>
+              <div className="flex items-center">
+                <Calendar className="w-5 h-5 mr-2" />
+                Active Hackathons
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('completed')}
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
+              className={`pb-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'completed'
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
+              onClick={() => setActiveTab('completed')}
             >
-              <div className="flex items-center space-x-2">
-                <Trophy className="w-4 h-4" />
-                <span>Completed Hackathons</span>
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                My Submissions
               </div>
             </button>
           </nav>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeTab === 'ongoing' ? (
-            SAMPLE_ONGOING_HACKATHONS.map((hackathon) => (
-              <div
-                key={hackathon.id}
-                onClick={() => handleCardClick(hackathon.id, 'ongoing')}
-                className="cursor-pointer"
-              >
-                <HackathonCard {...hackathon} />
-              </div>
-            ))
-          ) : (
-            SAMPLE_COMPLETED_HACKATHONS.map((hackathon) => (
-              <div
-                key={hackathon.id}
-                onClick={() => handleCardClick(hackathon.id, 'completed')}
-                className="cursor-pointer"
-              >
-                <HackathonCard {...hackathon} />
-              </div>
-            ))
-          )}
-        </div>
-
-        {((activeTab === 'ongoing' && SAMPLE_ONGOING_HACKATHONS.length === 0) ||
-          (activeTab === 'completed' && SAMPLE_COMPLETED_HACKATHONS.length === 0)) && (
-          <div className="text-center py-12">
-            <div className="rounded-full bg-gray-100 p-3 w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-              {activeTab === 'ongoing' ? (
-                <Clock className="w-6 h-6 text-gray-600" />
-              ) : (
-                <Trophy className="w-6 h-6 text-gray-600" />
-              )}
-            </div>
-            <h3 className="text-sm font-medium text-gray-900">No {activeTab} hackathons</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {activeTab === 'ongoing'
-                ? "You're not participating in any hackathons currently"
-                : "You haven't completed any hackathons yet"}
-            </p>
-          </div>
-        )}
+        {/* Content based on active tab */}
+        {renderHackathons()}
       </main>
     </div>
   );

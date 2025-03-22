@@ -1,119 +1,119 @@
 # Hackathon Management Platform
 
-A comprehensive platform for organizing and participating in hackathons, built with React, Node.js, Express, and MongoDB.
+A comprehensive platform for managing hackathons, enabling students to participate in challenges and teachers to create, manage, and evaluate submissions.
 
 ## Features
 
-- User authentication with role-based access control (Student and Teacher roles)
-- Teacher dashboard for creating and managing hackathons
-- Student dashboard for participating in hackathons
-- Submission management system
-- Evaluation and shortlisting functionality
-- Leaderboards for hackathon results
+### Student Features
+- Register and create a student account
+- Browse available hackathons
+- Register for hackathons
+- Submit projects with files and descriptions
+- View submission status and feedback
 
-## Project Structure
+### Teacher Features
+- Register and create a teacher account
+- Create and manage hackathons
+- Set evaluation parameters and eligibility criteria
+- Review and evaluate student submissions
+- Shortlist promising submissions
+- Access leaderboards
 
-The project is divided into two main parts:
+## Tech Stack
 
-- `frontend`: React application built with TypeScript, Tailwind CSS, and Vite
-- `backend`: Node.js/Express API with MongoDB database
+### Frontend
+- React with TypeScript
+- React Router for navigation
+- TailwindCSS for styling
+- React Hook Form for form handling
+- Lucide icons
+
+### Backend
+- Node.js and Express
+- MongoDB with Mongoose for data modeling
+- JWT for authentication
+- Multer for file uploads
+- Bcrypt for password hashing
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js (v14.0.0 or higher)
+- Node.js (v14 or later)
 - MongoDB (local or Atlas)
 
-### Setup
+### Installation and Setup
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd hackathon-platform
-   ```
+1. Clone the repository
+```
+git clone <repository-url>
+cd hackathon-platform
+```
 
-2. Install dependencies for both frontend and backend:
-   ```
-   # Install backend dependencies
-   cd backend
-   npm install
+2. Install dependencies
+```
+# Install backend dependencies
+cd backend
+npm install
 
-   # Install frontend dependencies
-   cd ../frontend
-   npm install
-   ```
+# Install frontend dependencies
+cd ../frontend
+npm install
+```
 
-3. Create a `.env` file in the backend directory:
-   ```
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/hackathon-platform
-   JWT_SECRET=your_jwt_secret_key_here
-   JWT_EXPIRE=30d
-   ```
+3. Create environment variables
+```
+# In the backend directory, create a .env file with the following:
+MONGODB_URI=mongodb://localhost:27017/hackathon-platform
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRE=30d
+COOKIE_EXPIRE=30
+FRONTEND_URL=http://localhost:5173
+PORT=5001
+```
 
-4. Start the backend server:
-   ```
-   cd backend
-   npm run dev
-   ```
+4. Run the application
+```
+# Start the backend server
+cd backend
+npm run dev
 
-5. Start the frontend development server:
-   ```
-   cd frontend
-   npm run dev
-   ```
+# Start the frontend development server
+cd ../frontend
+npm run dev
+```
 
-6. Open your browser and navigate to http://localhost:5173
+5. Access the application
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5001
 
-## API Documentation
+## API Endpoints
 
-### Authentication Endpoints
-
-- `POST /api/auth/register/student` - Register a new student
-- `POST /api/auth/register/teacher` - Register a new teacher
-- `POST /api/auth/login` - Login user
+### Authentication
+- `POST /api/auth/register/student` - Register a student
+- `POST /api/auth/register/teacher` - Register a teacher
+- `POST /api/auth/login` - Login
+- `GET /api/auth/logout` - Logout
 - `GET /api/auth/me` - Get current user
 
-### Hackathon Endpoints
-
-- `POST /api/hackathons` - Create a new hackathon (teacher only)
+### Hackathons
 - `GET /api/hackathons` - Get all hackathons
-- `GET /api/hackathons/:id` - Get a single hackathon
-- `PUT /api/hackathons/:id` - Update a hackathon (teacher only)
-- `DELETE /api/hackathons/:id` - Delete a hackathon (teacher only)
-- `POST /api/hackathons/:id/participants` - Register for a hackathon
-- `GET /api/hackathons/:id/participants` - Get hackathon participants (teacher only)
-- `GET /api/hackathons/:id/submissions` - Get hackathon submissions (teacher only)
-- `GET /api/hackathons/:id/leaderboard` - Get hackathon leaderboard
-- `GET /api/hackathons/:id/shortlisted` - Get shortlisted submissions (teacher only)
+- `GET /api/hackathons/completed` - Get completed hackathons
+- `GET /api/hackathons/:id` - Get a specific hackathon
+- `POST /api/hackathons` - Create a hackathon
+- `PUT /api/hackathons/:id` - Update a hackathon
+- `DELETE /api/hackathons/:id` - Delete a hackathon
+- `POST /api/hackathons/:id/collaborators` - Add collaborators
+- `POST /api/hackathons/:id/participants` - Register participants
+- `GET /api/hackathons/:id/participants` - Get participants list
+- `GET /api/hackathons/:id/leaderboard` - Get leaderboard
+- `GET /api/hackathons/:id/submissions` - Get all submissions
+- `GET /api/hackathons/:id/shortlisted` - Get shortlisted submissions
 
-### Submission Endpoints
-
+### Submissions
 - `POST /api/submissions` - Create a submission
 - `GET /api/submissions/:id` - Get a submission
-- `PUT /api/submissions/:id` - Update a submission (evaluation, teacher only)
-- `POST /api/submissions/:id/shortlist` - Toggle shortlist status (teacher only)
-
-## Technologies Used
-
-### Frontend
-- React
-- TypeScript
-- Tailwind CSS
-- React Router DOM
-- React Hook Form
-- Zod
-- Axios
-
-### Backend
-- Node.js
-- Express
-- MongoDB
-- Mongoose
-- JWT Authentication
-- bcrypt.js
+- `PUT /api/submissions/:id` - Evaluate a submission
+- `POST /api/submissions/:id/shortlist` - Toggle shortlist status
 
 ## License
-
-This project is licensed under the MIT License 
+MIT 

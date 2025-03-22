@@ -17,6 +17,34 @@ const parameterSchema = new mongoose.Schema({
   },
 });
 
+const eligibilityCriteriaSchema = new mongoose.Schema({
+  criteriaType: {
+    type: String,
+    enum: ['grade', 'school', 'state', 'phoneNumbers'],
+    required: [true, 'Criteria type is required'],
+  },
+  // For grade, school, state criteria
+  values: {
+    type: [String],
+    default: [],
+  },
+  // For specific phone numbers
+  phoneNumbers: {
+    type: [String],
+    default: [],
+    validate: {
+      validator: function(phoneNumbers) {
+        // Only validate if criteriaType is phoneNumbers
+        if (this.criteriaType === 'phoneNumbers') {
+          return phoneNumbers.length > 0 && phoneNumbers.every(phone => /^\d{10}$/.test(phone));
+        }
+        return true;
+      },
+      message: 'Invalid phone number format. Must be 10 digits.'
+    }
+  }
+});
+
 const hackathonSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -37,12 +65,24 @@ const hackathonSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'End date is required'],
   },
-  parameters: [parameterSchema],
+  parameters: {
+    type: [parameterSchema],
+    default: [{
+      name: 'Impact on society',
+      weight: 100,
+      description: 'How impactful is this project for society?'
+    }]
+  },
+  eligibilityCriteria: [eligibilityCriteriaSchema],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User who created the hackathon is required'],
   },
+  collaborators: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

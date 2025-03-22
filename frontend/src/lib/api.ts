@@ -38,12 +38,18 @@ interface HackathonData {
     weight: number;
     description: string;
   }>;
+  eligibilityCriteria?: Array<{
+    criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers';
+    values?: string[];
+    phoneNumbers?: string[];
+  }>;
+  collaborators?: string[];
 }
 
 interface SubmissionData {
   hackathonId: string;
   submissionText: string;
-  files?: Array<{
+  files: Array<{
     filename: string;
     path: string;
     mimetype: string;
@@ -81,10 +87,13 @@ export const authAPI = {
 // Hackathon API calls
 export const hackathonAPI = {
   getAllHackathons: () => api.get('/hackathons'),
+  getCompletedHackathons: () => api.get('/hackathons/completed'),
   getHackathon: (id: string) => api.get(`/hackathons/${id}`),
   createHackathon: (data: HackathonData) => api.post('/hackathons', data),
   updateHackathon: (id: string, data: Partial<HackathonData>) => api.put(`/hackathons/${id}`, data),
   deleteHackathon: (id: string) => api.delete(`/hackathons/${id}`),
+  addCollaborators: (hackathonId: string, collaboratorPhoneNumbers: string[]) => 
+    api.post(`/hackathons/${hackathonId}/collaborators`, { collaboratorPhoneNumbers }),
   registerParticipant: (hackathonId: string, userId: string) => 
     api.post(`/hackathons/${hackathonId}/participants`, { userId }),
   getParticipants: (hackathonId: string) => 

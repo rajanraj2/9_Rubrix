@@ -9,8 +9,8 @@ import TeacherRegistration from './pages/auth/TeacherRegistration';
 import StudentDashboard from './pages/dashboard/StudentDashboard';
 import TeacherDashboard from './pages/dashboard/TeacherDashboard';
 import HackathonDetails from './pages/dashboard/HackathonDetails';
+import HackathonDetail from './pages/dashboard/HackathonDetail';
 import HackathonSubmission from './pages/dashboard/HackathonSubmission';
-import CompletedHackathonView from './pages/dashboard/CompletedHackathonView';
 import CreateHackathon from './pages/dashboard/CreateHackathon';
 import LeaderboardPage from './pages/dashboard/LeaderboardPage';
 import ShortlistedPage from './pages/dashboard/ShortlistedPage';
@@ -51,8 +51,8 @@ const AppWithAuth = () => {
         {/* Student Routes */}
         <Route element={<ProtectedRoute role="student" />}>
           <Route path="/dashboard/student" element={<StudentDashboard />} />
-          <Route path="/dashboard/student/hackathon/:hackathonId" element={<HackathonSubmission />} />
-          <Route path="/dashboard/student/hackathon/:hackathonId/submission" element={<CompletedHackathonView />} />
+          <Route path="/dashboard/student/hackathon/:hackathonId" element={<HackathonDetail />} />
+          <Route path="/dashboard/student/hackathon/:hackathonId/submission" element={<HackathonSubmission />} />
         </Route>
 
         {/* Teacher Routes */}

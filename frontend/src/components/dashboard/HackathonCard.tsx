@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 
 interface Submission {
   id: string;
@@ -8,30 +8,45 @@ interface Submission {
   feedback: string;
 }
 
-interface HackathonCardProps {
-  id: string;
+export interface Hackathon {
+  _id: string;
   title: string;
   description: string;
   startDate: string;
   endDate: string;
   status: 'upcoming' | 'ongoing' | 'completed';
-  participants?: number;
-  submissions?: number;
+  participants: number;
+  submissions: number;
+  createdBy: {
+    _id: string;
+    fullName: string;
+  };
+  collaborators?: Array<{
+    _id: string;
+    fullName: string;
+  }>;
+  parameters?: Array<{
+    name: string;
+    weight: number;
+    description: string;
+  }>;
+}
+
+interface HackathonCardProps {
+  hackathon: Hackathon;
+  onClick: () => void;
   submission?: Submission;
 }
 
 const HackathonCard: React.FC<HackathonCardProps> = ({
-  title,
-  description,
-  startDate,
-  endDate,
-  status,
-  participants,
-  submissions,
+  hackathon,
+  onClick,
   submission,
 }) => {
+  const { title, description, startDate, endDate, status, participants, submissions, collaborators } = hackathon;
+  
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 cursor-pointer" onClick={onClick}>
       <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-600 mb-4 line-clamp-2">{description}</p>
       
@@ -47,6 +62,13 @@ const HackathonCard: React.FC<HackathonCardProps> = ({
           <div className="flex justify-between mt-3 text-sm text-gray-500">
             <div>Participants: {participants}</div>
             <div>Submissions: {submissions}</div>
+          </div>
+        )}
+
+        {collaborators && collaborators.length > 0 && (
+          <div className="flex items-center mt-3 text-sm text-gray-500">
+            <Users className="w-4 h-4 mr-2" />
+            <span>{collaborators.length} collaborator{collaborators.length !== 1 ? 's' : ''}</span>
           </div>
         )}
 

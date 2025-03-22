@@ -1,0 +1,290 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Calendar, Users, Check, Clock } from 'lucide-react';
+import Sidebar from '../../components/dashboard/Sidebar';
+import { hackathonAPI } from '../../lib/api';
+import { Hackathon } from '../../components/dashboard/HackathonCard';
+import { useAuth } from '../../lib/authContext';
+
+interface Participant {
+  userId: {
+    id: string;
+    fullName: string;
+  }
+}
+
+const HackathonDetail: React.FC = () => {
+  const { hackathonId } = useParams<{ hackathonId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  useEffect(() => {
+    const fetchHackathonDetails = async () => {
+      if (!hackathonId) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await hackathonAPI.getHackathon(hackathonId);
+        setHackathon(response.data.data);
+        
+        // Check if user is already registered
+        try {
+          const participantsResponse = await hackathonAPI.getParticipants(hackathonId);
+          const isUserRegistered = participantsResponse.data.data.some(
+            (participant: Participant) => participant.userId.id === user?.id
+          );
+          setIsRegistered(isUserRegistered);
+        } catch (err) {
+          // Error checking registration status is not critical, so just log it
+          console.error('Error checking registration status:', err);
+        }
+      } catch (err) {
+        console.error('Error fetching hackathon:', err);
+        setError('Failed to load hackathon details. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHackathonDetails();
+  }, [hackathonId, user?._id]);
+
+  const handleRegister = async () => {
+    if (!hackathonId || !user?.id) return;
+    
+    try {
+      setIsRegistering(true);
+      await hackathonAPI.registerParticipant(hackathonId, user.id);
+      setIsRegistered(true);
+      alert('Successfully registered for the hackathon!');
+    } catch (err) {
+      console.error('Registration error:', err);
+      alert('Failed to register for the hackathon. Please try again.');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!hackathonId) return;
+    navigate(`/dashboard/student/hackathon/${hackathonId}/submission`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="student" />
+        <main className="flex-1 p-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !hackathon) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="student" />
+        <main className="flex-1 p-6 flex items-center justify-center">
+          <div className="bg-red-50 text-red-600 p-4 rounded-md">
+            {error || 'Hackathon not found'}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const isHackathonActive = hackathon.status === 'ongoing';
+  const isHackathonUpcoming = hackathon.status === 'upcoming';
+  const isHackathonCompleted = hackathon.status === 'completed';
+  
+  // Format dates
+  const startDate = new Date(hackathon.startDate);
+  const endDate = new Date(hackathon.endDate);
+  const formattedStartDate = startDate.toLocaleDateString(undefined, { 
+    year: 'numeric', month: 'long', day: 'numeric' 
+  });
+  const formattedEndDate = endDate.toLocaleDateString(undefined, { 
+    year: 'numeric', month: 'long', day: 'numeric' 
+  });
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar role="student" />
+      <main className="flex-1 p-6">
+        <div className="mb-6">
+          <button 
+            onClick={() => navigate('/dashboard/student')}
+            className="text-indigo-600 hover:text-indigo-800 flex items-center mb-4"
+          >
+            ← Back to Dashboard
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">{hackathon.title}</h1>
+          <div className="flex items-center mt-2 mb-4">
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
+                isHackathonActive
+                  ? 'bg-green-100 text-green-800'
+                  : isHackathonUpcoming
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {isHackathonActive 
+                ? 'In Progress' 
+                : isHackathonUpcoming
+                ? 'Upcoming'
+                : 'Completed'}
+            </span>
+            <span className="text-sm text-gray-500">
+              Created by {hackathon.createdBy.fullName}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">About this Hackathon</h2>
+              <p className="text-gray-700 whitespace-pre-line mb-6">{hackathon.description}</p>
+              
+              <div className="flex items-center text-gray-600 mb-4">
+                <Calendar className="w-5 h-5 mr-2 text-gray-500" />
+                <span>
+                  {formattedStartDate} - {formattedEndDate}
+                </span>
+              </div>
+              
+              <div className="flex items-center text-gray-600">
+                <Users className="w-5 h-5 mr-2 text-gray-500" />
+                <span>
+                  {hackathon.participants || 0} Participants | {hackathon.submissions || 0} Submissions
+                </span>
+              </div>
+            </div>
+
+            {hackathon.parameters && hackathon.parameters.length > 0 && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Evaluation Parameters</h2>
+                <div className="space-y-4">
+                  {hackathon.parameters.map((param, index) => (
+                    <div key={index} className="border-b border-gray-200 pb-4 last:border-0 last:pb-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="text-md font-medium text-gray-900">{param.name}</h3>
+                        <span className="text-sm text-indigo-600 font-medium">{param.weight}%</span>
+                      </div>
+                      <p className="text-gray-600 text-sm">{param.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
+              
+              {isHackathonUpcoming && (
+                <div className="mb-4">
+                  <p className="text-gray-600 mb-4">
+                    <Clock className="w-5 h-5 inline mr-2 text-blue-500" />
+                    This hackathon will start on {formattedStartDate}.
+                  </p>
+                </div>
+              )}
+              
+              {isHackathonActive && (
+                <div className="mb-4">
+                  <p className="text-gray-600 mb-4">
+                    <Clock className="w-5 h-5 inline mr-2 text-green-500" />
+                    This hackathon is active! Ends on {formattedEndDate}.
+                  </p>
+                </div>
+              )}
+              
+              {isHackathonCompleted && (
+                <div className="mb-4">
+                  <p className="text-gray-600 mb-4">
+                    <Clock className="w-5 h-5 inline mr-2 text-gray-500" />
+                    This hackathon ended on {formattedEndDate}.
+                  </p>
+                </div>
+              )}
+              
+              {!isHackathonCompleted && (
+                <div className="mb-6">
+                  {isRegistered ? (
+                    <div className="flex items-center text-green-600 mb-4">
+                      <Check className="w-5 h-5 mr-2" />
+                      <span>You are registered for this hackathon</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleRegister}
+                      disabled={isRegistering}
+                      className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                        isRegistering ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {isRegistering ? (
+                        <span className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          Registering...
+                        </span>
+                      ) : (
+                        'Register for Hackathon'
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {isRegistered && isHackathonActive && (
+                <button
+                  onClick={handleSubmit}
+                  className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  Submit Your Project
+                </button>
+              )}
+              
+              {isRegistered && isHackathonCompleted && (
+                <button
+                  onClick={handleSubmit}
+                  className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  View Your Submission
+                </button>
+              )}
+            </div>
+            
+            {hackathon.collaborators && hackathon.collaborators.length > 0 && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Collaborators</h2>
+                <ul className="space-y-3">
+                  {hackathon.collaborators.map((collaborator) => (
+                    <li key={collaborator._id} className="flex items-center">
+                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-800 mr-3">
+                        {collaborator.fullName.charAt(0)}
+                      </div>
+                      <span className="text-gray-700">{collaborator.fullName}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default HackathonDetail; 

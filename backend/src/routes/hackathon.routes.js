@@ -7,7 +7,9 @@ const {
   deleteHackathon,
   registerParticipant,
   getParticipants,
-  getLeaderboard
+  getLeaderboard,
+  addCollaborators,
+  getCompletedHackathons
 } = require('../controllers/hackathon.controller');
 const { 
   getSubmissions,
@@ -17,12 +19,14 @@ const { protect, authorize } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getHackathons);
-router.get('/:id', getHackathon);
+// Public routes - No need for public routes anymore
+// All routes should be protected
 
 // Protected routes - any authenticated user
 router.use(protect);
+router.get('/', getHackathons);
+router.get('/completed', getCompletedHackathons);
+router.get('/:id', getHackathon);
 router.post('/:id/participants', registerParticipant);
 router.get('/:id/leaderboard', getLeaderboard);
 
@@ -30,6 +34,7 @@ router.get('/:id/leaderboard', getLeaderboard);
 router.post('/', authorize('teacher'), createHackathon);
 router.put('/:id', authorize('teacher'), updateHackathon);
 router.delete('/:id', authorize('teacher'), deleteHackathon);
+router.post('/:id/collaborators', authorize('teacher'), addCollaborators);
 router.get('/:id/participants', authorize('teacher'), getParticipants);
 router.get('/:id/submissions', authorize('teacher'), getSubmissions);
 router.get('/:id/shortlisted', authorize('teacher'), getShortlisted);
