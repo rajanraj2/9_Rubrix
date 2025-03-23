@@ -168,14 +168,47 @@ const CreateHackathon: React.FC = () => {
     setError('');
 
     try {
+      // Convert the criteria state to the format expected by the API
+      const formattedCriteria = criteria.map(crit => {
+        const formattedCriteria: {
+          criteriaType: 'grade' | 'school' | 'state' | 'phoneNumbers' | 'codeOnly';
+          values?: string[];
+          phoneNumbers?: string[];
+        } = {
+          criteriaType: crit.criteriaType
+        };
+
+        // Add values or phoneNumbers based on criteria type
+        if (crit.criteriaType === 'phoneNumbers') {
+          formattedCriteria.phoneNumbers = crit.phoneNumbers;
+        } else if (crit.criteriaType !== 'codeOnly') {
+          formattedCriteria.values = crit.values;
+        }
+
+        return formattedCriteria;
+      });
+
+      // Convert parameters to the format expected by the API
+      const formattedParameters = parameters.map(param => ({
+        name: param.name,
+        weight: param.weight,
+        description: param.description
+      }));
+
+      // Parse collaborators phone numbers if any are provided
+      const formattedCollaborators = collaborators 
+        ? collaborators.split(',').map(c => c.trim()).filter(c => c)
+        : [];
+
       await hackathonAPI.createHackathon({
         title,
         description,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         uniqueCode: uniqueCode.trim(),
-        parameters: [],
-        eligibilityCriteria: []
+        parameters: formattedParameters,
+        eligibilityCriteria: formattedCriteria,
+        collaborators: formattedCollaborators
       });
       
       navigate('/dashboard/teacher');
@@ -340,6 +373,9 @@ const CreateHackathon: React.FC = () => {
                     Start Date *
                   </label>
                   <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none">
+                      <Calendar className="h-5 w-5" />
+                    </div>
                     <DatePicker
                       selected={startDate}
                       onChange={(date: Date | null) => date && setStartDate(date)}
@@ -348,11 +384,10 @@ const CreateHackathon: React.FC = () => {
                       timeIntervals={15}
                       dateFormat="MMMM d, yyyy h:mm aa"
                       minDate={new Date()}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm pl-10"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholderText="Select start date and time"
                       required
                     />
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   </div>
                 </div>
 
@@ -361,6 +396,9 @@ const CreateHackathon: React.FC = () => {
                     End Date *
                   </label>
                   <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none">
+                      <Calendar className="h-5 w-5" />
+                    </div>
                     <DatePicker
                       selected={endDate}
                       onChange={(date: Date | null) => date && setEndDate(date)}
@@ -369,11 +407,10 @@ const CreateHackathon: React.FC = () => {
                       timeIntervals={15}
                       dateFormat="MMMM d, yyyy h:mm aa"
                       minDate={startDate || new Date()}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm pl-10"
+                      className="mt-1 block w-fit border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholderText="Select end date and time"
                       required
                     />
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   </div>
                 </div>
               </div>
