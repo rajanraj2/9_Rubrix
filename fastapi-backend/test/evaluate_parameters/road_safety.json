@@ -1,0 +1,19 @@
+{
+    "problem_statement": "All that you need to know about Road Safety Hackathon Did you know that on India's National Highways, pedestrian accidents are increasing at an alarming rate? In just one year, pedestrian fatalities have risen from 9,462 to 10,160, which means an average of one pedestrian dies every hour. Despite the presence of Foot Over Bridges (FOBs), many pedestrians continue to cross the roads at grade level, highlighting a critical safety issue. This highlights the urgency of addressing pedestrian and Vulnerable Road Users (VRUs) safety, especially the underutilization of Foot Over Bridges (FOBs) and the need for safer crossings and infrastructure improvements. In light of these concerning statistics, the National Highways Authority of India (NHAI) and the Highway Operators Association - India (HOAI) are coming together to host a joint hackathon aimed at finding innovative solutions to improve pedestrian safety on national highways.",
+    "parameter_definitions": {
+        "technicality": "How technically sound and innovative is the approach?",
+        "impact": "What is the potential effect or influence of the proposed solution?",
+        "feasibility": "How practical and achievable is the solution within existing technological, economic, and social constraints?",
+        "scalability": "Can the solution be effectively implemented on a larger scale with minimal adjustments?",
+        "sustainability": "Does the solution promote long-term benefits and environmentally friendly practices?",
+        "user_adoption": "How easily can the target audience or stakeholders adopt and integrate the solution into their daily lives?",
+        "cost_efficiency": "Is the solution cost-effective in terms of implementation, maintenance, and potential return on investment?",
+        "innovation": "How unique, creative, and forward-thinking is the approach compared to existing solutions?",
+        "social_impact": "What are the broader societal benefits of the solution, such as improving quality of life, inclusivity, or accessibility?",
+        "data_driven": "Does the solution leverage data, analytics, or AI effectively to enhance decision-making and performance?"     
+    },
+    "student_submission": "CONCEPT NOTE Theme and Title of Solution Title of Solution Enhancing Pedestrian Safety Through Inclusive, Engaging, and AI-driven FOB Solutions Problem Identification Challenges in Current FOBs Solutions for Pedestrian Crossings Current FOB designs and solutions in India face several challenges, leading to underutilization and pedestrian fatalities: • Lack of inclusivity: Many FOBs are not equipped with ramps, elevators, or wide staircases, making them inaccessible for elderly, disabled, and pregnant individuals. • Location of FOB: Placement may be far from natural pedestrian crossings, discouraging usage. • Poor visibility and accessibility: FOBs often lack bright colours or clear signage within a 500-meter range to alert pedestrians to their presence. • Maintenance issues: Dirty, poorly lit, and weather-exposed FOBs discourage usage. • Unauthorized use: Misuse by unauthorized vehicles such as bikes due to wide slopes without barriers. Challenges in Current Road User Behaviour for FOB utilizations • Time and convenience: Pedestrians often prioritize crossing directly on roads instead of taking a longer path to use FOBs. • Awareness deficit: Insufficient education on the safety benefits of FOBs, combined with a lack of visual deterrents for jaywalking. • Cultural inertia: Resistance to adopting safer habits without sustained awareness campaigns or incentives. • Lack of user-centric engagement: FOBs are dull and uninspiring, offering no engagement to encourage their use. • Poor enforcement of jaywalking penalties: Inadequate monitoring and penalties for road-crossing violations reduce the motivation to use FOBs.",
+    "sbert_weight": 0.7,
+    "tfidf_weight": 0.3
+  }
+  

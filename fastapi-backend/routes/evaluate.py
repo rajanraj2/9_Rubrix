@@ -1,5 +1,8 @@
 from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import Dict, List
 from services.evaluation import compute_similarity, parameter_based_evaluation, generate_embedding
+from services.evaluate_parameters import evaluate_parameters
 
 router = APIRouter()
 
@@ -407,7 +410,7 @@ def store_ideal_solution(ideal_text: str):
 @router.post("/submission/")
 def evaluate_submission(student_text: str):
     """
-    Evaluates a student’s submission using pre-stored ideal solution embeddings.
+    Evaluates a student's submission using pre-stored ideal solution embeddings.
     """
     if "embedding" not in ideal_solution_store:
         return {"error": "Ideal solution embeddings not stored. Please upload first."}
@@ -422,7 +425,42 @@ def evaluate_submission(student_text: str):
         "student_embedding": similarity_data["student_embedding"]
     }
 
+# Define request schema
+class EvaluationRequest(BaseModel):
+    problem_statement: str
+    parameter_definitions: Dict[str, str]  # Dictionary for parameter descriptions
+    student_submission: str
+    sbert_weight: float = 0.7
+    tfidf_weight: float = 0.3
 
+@router.post("/evaluate/parameters/")
+def evaluate_submission(request: EvaluationRequest):
+    """
+    Evaluates a student submission based on multiple parameters using both SBERT and TF-IDF.
+    """
+    print(f"Received parameter definitions: {request.parameter_definitions}")  # Debugging
+
+    try:
+        # Extract parameter names from the dictionary
+        parameters = list(request.parameter_definitions.keys())
+
+        parameter_scores = evaluate_parameters(
+            problem_statement=request.problem_statement,
+            student_submission=request.student_submission,
+            parameter_definitions=request.parameter_definitions,  # Pass the full dictionary
+            sbert_weight=request.sbert_weight,
+            tfidf_weight=request.tfidf_weight
+        )
+        
+        return {
+            "status": "success",
+            "parameter_scores": parameter_scores
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 # from fastapi import APIRouter
@@ -433,7 +471,7 @@ def evaluate_submission(student_text: str):
 # @router.post("/submission/")
 # def evaluate_submission(student_text: str, ideal_text: str):
 #     """
-#     Evaluates a student’s submission based on cosine similarity and rule-based scoring.
+#     Evaluates a student's submission based on cosine similarity and rule-based scoring.
 #     """
 #     similarity_score = compute_similarity(student_text, ideal_text)
 #     parameter_scores = parameter_based_evaluation(student_text)
