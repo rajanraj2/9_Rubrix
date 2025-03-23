@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Users, Check, Clock } from 'lucide-react';
+import { Calendar, Users, Check, Clock, Eye } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
-import { hackathonAPI } from '../../lib/api';
+import { hackathonAPI, submissionAPI } from '../../lib/api';
 import { Hackathon } from '../../components/dashboard/HackathonCard';
 import { useAuth } from '../../lib/authContext';
 
@@ -11,6 +11,14 @@ interface Participant {
     id: string;
     fullName: string;
   }
+}
+
+interface Submission {
+  _id: string;
+  hackathonId: {
+    _id: string;
+  };
+  submittedAt: string;
 }
 
 const HackathonDetail: React.FC = () => {
@@ -22,56 +30,164 @@ const HackathonDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [submission, setSubmission] = useState<Submission | null>(null);
 
-  useEffect(() => {
-    const fetchHackathonDetails = async () => {
-      if (!hackathonId) return;
+  const fetchHackathonDetails = useCallback(async () => {
+    if (!hackathonId) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log('Fetching hackathon details for ID:', hackathonId);
       
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await hackathonAPI.getHackathon(hackathonId);
-        setHackathon(response.data.data);
-        
-        // Check if user is already registered
+      // Fetch the hackathon details first
+      const response = await hackathonAPI.getHackathon(hackathonId);
+      setHackathon(response.data.data);
+      console.log('Hackathon details received:', response.data.data.title);
+      
+      // Check if user is already registered (only if user is logged in)
+      if (user && user.id) {
         try {
+          console.log('Checking registration status for user ID:', user.id);
           const participantsResponse = await hackathonAPI.getParticipants(hackathonId);
-          const isUserRegistered = participantsResponse.data.data.some(
-            (participant: Participant) => participant.userId.id === user?.id
+          const participants = participantsResponse.data.data;
+          console.log('Participants:', participants);
+          
+          const isUserRegistered = participants.some(
+            (participant: Participant) => participant.userId.id === user.id
           );
+          console.log('Is user registered:', isUserRegistered, 'User ID:', user.id);
+          
+          // Update registration state immediately
           setIsRegistered(isUserRegistered);
+          
+          // If registered, check if they've already submitted
+          if (isUserRegistered) {
+            const submissionsResponse = await submissionAPI.getUserSubmissions();
+            const userSubmissions = submissionsResponse.data.data;
+            console.log('User submissions:', userSubmissions);
+            
+            const userSubmission = userSubmissions.find(
+              (sub: Submission) => sub.hackathonId._id === hackathonId
+            );
+            
+            if (userSubmission) {
+              console.log('Found user submission:', userSubmission);
+              setHasSubmitted(true);
+              setSubmission(userSubmission);
+            } else {
+              console.log('No submission found for this hackathon');
+              setHasSubmitted(false);
+              setSubmission(null);
+            }
+          } else {
+            // User is not registered, ensure these flags are reset
+            console.log('User is not registered, resetting submission state');
+            setHasSubmitted(false);
+            setSubmission(null);
+          }
         } catch (err) {
           // Error checking registration status is not critical, so just log it
           console.error('Error checking registration status:', err);
+          
+          // Ensure we still update the UI appropriately even if checking status fails
+          setIsRegistered(false);
+          setHasSubmitted(false);
+          setSubmission(null);
         }
-      } catch (err) {
-        console.error('Error fetching hackathon:', err);
-        setError('Failed to load hackathon details. Please try again.');
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.log('No user ID available, cannot check registration status');
+        setIsRegistered(false);
+        setHasSubmitted(false);
+        setSubmission(null);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching hackathon:', err);
+      setError('Failed to load hackathon details. Please try again.');
+    } finally {
+      setIsLoading(false);
+      console.log('Finished loading hackathon. Registration state:', { isRegistered, hasSubmitted });
+    }
+  }, [hackathonId, user?.id]);
 
-    fetchHackathonDetails();
-  }, [hackathonId, user?._id]);
+  useEffect(() => {
+    // This will run once when the component mounts and ensure the hackathon details are loaded
+    if (hackathonId) {
+      console.log('HackathonDetail mounted, fetching details for hackathon:', hackathonId);
+      fetchHackathonDetails();
+    }
+  }, [fetchHackathonDetails, hackathonId]);
+
+  // Additional useEffect to ensure proper UI state as soon as registration completes
+  useEffect(() => {
+    if (isRegistered && !hasSubmitted && !isLoading && hackathon) {
+      console.log('User is registered and UI should show Submit button for hackathon:', hackathon.title);
+    } else if (!isRegistered && !isLoading && hackathon) {
+      console.log('User is NOT registered and UI should show Register button for hackathon:', hackathon.title);
+    }
+  }, [isRegistered, hasSubmitted, isLoading, hackathon]);
+
+  // Redirect to submission page ONLY if user has already submitted
+  useEffect(() => {
+    if (hasSubmitted && !isLoading && hackathonId) {
+      console.log('User has submitted, redirecting to submission page');
+      navigate(`/dashboard/student/hackathon/${hackathonId}/submission`);
+    } else {
+      console.log('Current state:', { 
+        isRegistered, 
+        hasSubmitted, 
+        isLoading, 
+        hackathonId: !!hackathonId 
+      });
+      
+      // Do not add redirects here for Registration state
+      // We'll let the UI update naturally to show the submit button
+    }
+  }, [hasSubmitted, isLoading, hackathonId, navigate, isRegistered]);
 
   const handleRegister = async () => {
     if (!hackathonId || !user?.id) return;
     
     try {
       setIsRegistering(true);
-      await hackathonAPI.registerParticipant(hackathonId, user.id);
+      console.log('Starting registration process for hackathon:', hackathonId);
+      
+      // Call the API to register the user
+      const response = await hackathonAPI.registerParticipant(hackathonId, user.id);
+      console.log('Registration response received:', response.data);
+      
+      // Immediately update the UI state to show the Submit button
+      console.log('Setting isRegistered to true to update UI');
       setIsRegistered(true);
-      alert('Successfully registered for the hackathon!');
+      
+      // Make sure submission state is reset
+      setHasSubmitted(false);
+      
+      // Show success message
+      alert('Successfully registered for the hackathon! You can now submit your project.');
+      console.log('Registration complete, submit button should now be visible');
+      
+      // Navigate to the same page to force a complete refresh of the component state
+      // This ensures all state variables are properly reset and the UI updates correctly
+      navigate(`/dashboard/student/hackathon/${hackathonId}`, { replace: true });
     } catch (err) {
       console.error('Registration error:', err);
       alert('Failed to register for the hackathon. Please try again.');
+      
+      // Reset state on error
+      setIsRegistered(false);
     } finally {
       setIsRegistering(false);
     }
   };
 
   const handleSubmit = () => {
+    if (!hackathonId) return;
+    navigate(`/dashboard/student/hackathon/${hackathonId}/submission`);
+  };
+
+  const viewSubmission = () => {
     if (!hackathonId) return;
     navigate(`/dashboard/student/hackathon/${hackathonId}/submission`);
   };
@@ -103,6 +219,7 @@ const HackathonDetail: React.FC = () => {
   const isHackathonActive = hackathon.status === 'ongoing';
   const isHackathonUpcoming = hackathon.status === 'upcoming';
   const isHackathonCompleted = hackathon.status === 'completed';
+  const isHackathonAvailable = isHackathonActive || isHackathonUpcoming; // Can submit if upcoming or ongoing
   
   // Format dates
   const startDate = new Date(hackathon.startDate);
@@ -113,6 +230,11 @@ const HackathonDetail: React.FC = () => {
   const formattedEndDate = endDate.toLocaleDateString(undefined, { 
     year: 'numeric', month: 'long', day: 'numeric' 
   });
+  
+  // Format submission date if available
+  const submissionDate = submission ? new Date(submission.submittedAt).toLocaleDateString(undefined, { 
+    year: 'numeric', month: 'long', day: 'numeric' 
+  }) : null;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -246,7 +368,7 @@ const HackathonDetail: React.FC = () => {
                 </div>
               )}
               
-              {isRegistered && isHackathonActive && (
+              {isRegistered && !hasSubmitted && isHackathonAvailable && (
                 <button
                   onClick={handleSubmit}
                   className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -255,13 +377,26 @@ const HackathonDetail: React.FC = () => {
                 </button>
               )}
               
-              {isRegistered && isHackathonCompleted && (
-                <button
-                  onClick={handleSubmit}
-                  className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  View Your Submission
-                </button>
+              {isRegistered && hasSubmitted && (
+                <div>
+                  <div className="flex items-center text-green-600 mb-4">
+                    <Check className="w-5 h-5 mr-2" />
+                    <span>You have already submitted your project{submissionDate ? ` on ${submissionDate}` : ''}</span>
+                  </div>
+                  <button
+                    onClick={viewSubmission}
+                    className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Your Submission
+                  </button>
+                </div>
+              )}
+              
+              {isRegistered && !hasSubmitted && isHackathonCompleted && (
+                <div className="text-amber-600 p-3 bg-amber-50 rounded-md">
+                  You were registered but did not submit a project before the deadline.
+                </div>
               )}
             </div>
             

@@ -37,8 +37,14 @@ const submissionSchema = new mongoose.Schema({
   },
   files: [{
     filename: String,
-    path: String,
+    path: String, // S3 key
     mimetype: String,
+    size: Number,
+    url: String, // S3 URL
+    etag: String, // S3 ETag
+    bucket: String, // S3 bucket name
+    key: String, // S3 object key (same as path but explicitly named)
+    s3ObjectId: String // S3 object ID
   }],
   isShortlisted: {
     type: Boolean,

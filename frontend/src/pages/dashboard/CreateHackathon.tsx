@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Save, Trash2, Users, Filter, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw, Users, Filter, Plus, Trash2, Calendar } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import Sidebar from '../../components/dashboard/Sidebar';
 import { hackathonAPI } from '../../lib/api';
 
+// Define interfaces for the component
 interface Parameter {
   id: string;
   name: string;
@@ -18,16 +21,25 @@ interface EligibilityCriteria {
   phoneNumbers: string[];
 }
 
+// Define interface for API error responses
+interface ApiErrorResponse {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 const CreateHackathon: React.FC = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [uniqueCode, setUniqueCode] = useState('');
   const [collaborators, setCollaborators] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
   // Parameters state
   const [parameters, setParameters] = useState<Parameter[]>([
@@ -38,7 +50,7 @@ const CreateHackathon: React.FC = () => {
   const [criteria, setCriteria] = useState<EligibilityCriteria[]>([]);
   
   // Generate a unique code on component mount
-  useEffect(() => {
+  React.useEffect(() => {
     generateUniqueCode();
   }, []);
 
@@ -141,96 +153,42 @@ const CreateHackathon: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
-    if (!title || !description || !startDate || !endDate || !uniqueCode) {
-      setError('Please fill in all required fields');
+    if (!startDate || !endDate) {
+      setError('Start and end dates are required');
       return;
     }
-
-    if (uniqueCode.length !== 6) {
-      setError('Unique code must be 6 characters');
+    
+    // Ensure end date is after start date
+    if (endDate <= startDate) {
+      setError('End date must be after start date');
       return;
     }
-
-    if (parameters.some(param => !param.name || !param.description)) {
-      setError('Please fill in all parameter details');
-      return;
-    }
-
-    const totalWeight = parameters.reduce((sum, param) => sum + param.weight, 0);
-    if (totalWeight !== 100) {
-      setError('Parameter weights must sum to 100');
-      return;
-    }
+    
+    setIsLoading(true);
+    setError('');
 
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Format parameters for API
-      const formattedParameters = parameters.map(({ name, weight, description }) => ({
-        name,
-        weight,
-        description,
-      }));
-      
-      // Format hackathon data for submission
-      const formattedEligibilityCriteria = criteria.map(crit => {
-        if (crit.criteriaType === 'phoneNumbers') {
-          return {
-            criteriaType: crit.criteriaType,
-            phoneNumbers: crit.phoneNumbers.filter(phone => phone.trim() !== '')
-          };
-        } else if (crit.criteriaType === 'codeOnly') {
-          return {
-            criteriaType: crit.criteriaType,
-            values: [],
-            phoneNumbers: []
-          };
-        } else {
-          return {
-            criteriaType: crit.criteriaType,
-            values: crit.values.filter(value => value.trim() !== '')
-          };
-        }
-      });
-      
-      // Create hackathon
-      const response = await hackathonAPI.createHackathon({
+      await hackathonAPI.createHackathon({
         title,
         description,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
-        uniqueCode: uniqueCode.toUpperCase(),
-        parameters: formattedParameters,
-        eligibilityCriteria: formattedEligibilityCriteria,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        uniqueCode: uniqueCode.trim(),
+        parameters: [],
+        eligibilityCriteria: []
       });
       
-      // If collaborators were added, add them to the hackathon
-      if (collaborators.trim()) {
-        const collaboratorPhoneNumbers = collaborators
-          .split(',')
-          .map(num => num.trim())
-          .filter(num => num.length === 10);
-        
-        if (collaboratorPhoneNumbers.length > 0) {
-          await hackathonAPI.addCollaborators(
-            response.data.data._id,
-            collaboratorPhoneNumbers
-          );
-        }
-      }
-      
-      // Navigate back to teacher dashboard
       navigate('/dashboard/teacher');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 
-        typeof err === 'object' && err !== null && 'response' in err 
-        ? ((err.response as { data?: { message?: string } })?.data?.message || 'Failed to create hackathon')
-        : 'Failed to create hackathon. Please try again.';
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : typeof err === 'object' && err !== null && 'response' in err 
+          ? ((err as ApiErrorResponse).response?.data?.message || 'Failed to create hackathon')
+          : 'Failed to create hackathon';
+          
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -381,28 +339,42 @@ const CreateHackathon: React.FC = () => {
                   <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
                     Start Date *
                   </label>
-                  <input
-                    type="datetime-local"
-                    id="startDate"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    required
-                  />
+                  <div className="relative">
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date: Date | null) => date && setStartDate(date)}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      timeIntervals={15}
+                      dateFormat="MMMM d, yyyy h:mm aa"
+                      minDate={new Date()}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm pl-10"
+                      placeholderText="Select start date and time"
+                      required
+                    />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  </div>
                 </div>
 
                 <div>
                   <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
                     End Date *
                   </label>
-                  <input
-                    type="datetime-local"
-                    id="endDate"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    required
-                  />
+                  <div className="relative">
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date: Date | null) => date && setEndDate(date)}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      timeIntervals={15}
+                      dateFormat="MMMM d, yyyy h:mm aa"
+                      minDate={startDate || new Date()}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm pl-10"
+                      placeholderText="Select end date and time"
+                      required
+                    />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  </div>
                 </div>
               </div>
 
@@ -599,13 +571,13 @@ const CreateHackathon: React.FC = () => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                loading ? 'opacity-70 cursor-not-allowed' : ''
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
               <Save className="w-4 h-4 mr-2" />
-              {loading ? 'Creating...' : 'Create Hackathon'}
+              {isLoading ? 'Creating...' : 'Create Hackathon'}
             </button>
           </div>
         </form>

@@ -3,10 +3,12 @@ const {
   createSubmission,
   getSubmission,
   updateSubmission,
-  toggleShortlist
+  toggleShortlist,
+  getUserSubmissions,
+  getFilePresignedUrl
 } = require('../controllers/submission.controller');
 const { protect, authorize } = require('../middleware/auth.middleware');
-const upload = require('../middleware/upload.middleware');
+const { uploadToS3 } = require('../services/s3Service');
 
 const router = express.Router();
 
@@ -14,12 +16,15 @@ const router = express.Router();
 router.use(protect);
 
 // Routes for all users
-router.post('/', upload.array('files', 5), createSubmission);
+router.post('/', uploadToS3.array('files', 5), createSubmission);
+router.get('/my-submissions', getUserSubmissions);
 router.get('/:id', getSubmission);
+router.get('/:submissionId/file/:fileIndex/presigned-url', getFilePresignedUrl);
 
-// Routes for teachers only
-router.put('/:id', authorize('teacher'), updateSubmission);
-router.post('/:id/shortlist', authorize('teacher'), toggleShortlist);
+// Routes for teachers and admins only
+router.use(authorize('teacher', 'admin'));
+router.put('/:id', updateSubmission);
+router.post('/:id/shortlist', toggleShortlist);
 
 module.exports = router;
  

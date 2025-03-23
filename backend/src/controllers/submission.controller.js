@@ -1,6 +1,7 @@
 const Submission = require('../models/submission.model');
 const Hackathon = require('../models/hackathon.model');
 const Participant = require('../models/participant.model');
+const { s3, BUCKET_NAME, getS3ObjectInfo, generatePresignedUrl } = require('../services/s3Service');
 
 // Create a submission
 exports.createSubmission = async (req, res) => {
@@ -40,16 +41,51 @@ exports.createSubmission = async (req, res) => {
     if (existingSubmission) {
       return res.status(400).json({
         success: false,
-        message: 'You have already submitted for this hackathon',
+        message: 'You have already submitted for this hackathon and cannot resubmit',
       });
     }
     
-    // Process uploaded files
-    const files = req.files ? req.files.map(file => ({
-      filename: file.originalname,
-      path: file.path,
-      mimetype: file.mimetype,
-    })) : [];
+    // Process uploaded files from S3
+    let files = [];
+    if (req.files && req.files.length > 0) {
+      files = await Promise.all(req.files.map(async (file) => {
+        try {
+          // Get additional information from S3
+          const objectInfo = await s3.headObject({
+            Bucket: BUCKET_NAME || 'pijamcodemitra',
+            Key: file.key
+          }).promise();
+          
+          // Extract ETag (remove quotes)
+          const etag = objectInfo.ETag ? objectInfo.ETag.replace(/"/g, '') : null;
+          
+          return {
+            filename: file.originalname,
+            path: file.key,
+            mimetype: file.mimetype,
+            size: file.size,
+            url: file.location,
+            etag: etag,
+            bucket: BUCKET_NAME || 'pijamcodemitra',
+            key: file.key,
+            s3ObjectId: `${BUCKET_NAME}/${file.key}`
+          };
+        } catch (err) {
+          console.error('Error getting S3 object info:', err);
+          // Return basic info if we can't get extended info
+          return {
+            filename: file.originalname,
+            path: file.key,
+            mimetype: file.mimetype,
+            size: file.size,
+            url: file.location,
+            bucket: BUCKET_NAME || 'pijamcodemitra',
+            key: file.key,
+            s3ObjectId: `${BUCKET_NAME}/${file.key}`
+          };
+        }
+      }));
+    }
     
     // Create submission
     const submission = await Submission.create({
@@ -64,6 +100,7 @@ exports.createSubmission = async (req, res) => {
       data: submission,
     });
   } catch (error) {
+    console.error('Submission error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -296,6 +333,103 @@ exports.getShortlisted = async (req, res) => {
       data: submissions,
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get user's submissions
+exports.getUserSubmissions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all submissions by this user
+    const submissions = await Submission.find({ userId })
+      .populate({
+        path: 'hackathonId',
+        select: 'title description startDate endDate status parameters',
+      });
+    
+    res.status(200).json({
+      success: true,
+      count: submissions.length,
+      data: submissions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get a presigned URL for a submission file
+exports.getFilePresignedUrl = async (req, res) => {
+  try {
+    const { submissionId, fileIndex } = req.params;
+    
+    // Find the submission
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found',
+      });
+    }
+    
+    // Check if user is authorized to view submission
+    // Allow if user is the submission creator, hackathon creator, or admin
+    const hackathon = await Hackathon.findById(submission.hackathonId);
+    if (
+      submission.userId.toString() !== req.user.id &&
+      hackathon.createdBy.toString() !== req.user.id &&
+      req.user.role !== 'admin'
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this file',
+      });
+    }
+    
+    // Check if fileIndex is valid
+    const fileIdx = parseInt(fileIndex, 10);
+    if (isNaN(fileIdx) || fileIdx < 0 || fileIdx >= submission.files.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file index',
+      });
+    }
+    
+    // Get the file info
+    const file = submission.files[fileIdx];
+    const fileKey = file.key;
+    const fileName = file.filename;
+    const mimeType = file.mimetype;
+    
+    // Check if key is valid
+    if (!fileKey || fileKey.trim() === '') {
+      
+      return res.status(400).json({
+        success: false,
+        message: 'File key is missing or invalid',
+      });
+    }
+
+    // Generate presigned URL valid for 10 minutes with content disposition
+    const presignedUrl = await generatePresignedUrl(fileKey, 600, fileName, mimeType);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        presignedUrl,
+        filename: fileName,
+        mimetype: mimeType,
+      },
+    });
+  } catch (error) {
+    console.error('Error generating presigned URL:', error);
     res.status(500).json({
       success: false,
       message: error.message,

@@ -114,6 +114,9 @@ export const submissionAPI = {
   getSubmission: (id: string) => api.get(`/submissions/${id}`),
   evaluateSubmission: (id: string, data: EvaluationData) => api.put(`/submissions/${id}`, data),
   toggleShortlist: (id: string) => api.post(`/submissions/${id}/shortlist`, {}),
+  getUserSubmissions: () => api.get('/submissions/my-submissions'),
+  getFilePresignedUrl: (submissionId: string, fileIndex: number) => 
+    api.get(`/submissions/${submissionId}/file/${fileIndex}/presigned-url`),
 };
 
 export default api; 

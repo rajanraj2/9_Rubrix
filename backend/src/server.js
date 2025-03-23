@@ -12,6 +12,9 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
+// Suppress AWS SDK V2 deprecation warnings - TODO: Migrate to AWS SDK V3 in the future
+process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = '1';
+
 // Create Express app
 const app = express();
 
