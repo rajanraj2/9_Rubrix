@@ -39,8 +39,8 @@ const ALLOWED_FILE_TYPES = {
   audio: ['.mp3', '.wav'],
 };
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 * 1024); // 2MB in MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 * 1024); // 10MB in MB
 
 const HackathonSubmission: React.FC = () => {
   const { hackathonId } = useParams<{ hackathonId: string }>();
@@ -124,7 +124,7 @@ const HackathonSubmission: React.FC = () => {
 
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        alert(`File ${file.name} is too large. Maximum size is 2MB.`);
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
         continue;
       }
 
