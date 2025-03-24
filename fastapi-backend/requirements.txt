@@ -17,6 +17,8 @@ docx2txt
 beautifulsoup4
 pillow
 python-multipart
+boto3
+python-dotenv
 
 langchain
 huggingface-hub
