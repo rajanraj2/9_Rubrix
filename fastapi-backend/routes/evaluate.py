@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List
 from services.evaluation import compute_similarity, parameter_based_evaluation, generate_embedding
 from services.evaluate_parameters import evaluate_parameters
+from services.evaluator import evaluate_solution
 
 router = APIRouter()
 
@@ -397,6 +398,28 @@ ideal_solution_store = {
     0.048713698983192444
   ]
 }
+
+# Request schema for general evaluation using LangChain
+class GeneralEvaluationRequest(BaseModel):
+    problem_statement: str
+    criteria: str
+    submission: str
+
+@router.post("/evaluate")
+def evaluate_general(request: GeneralEvaluationRequest):
+    try:
+        print("hello")
+        result = evaluate_solution(
+            problem_statement=request.problem_statement,
+            criteria=request.criteria,
+            submission=request.submission
+        )
+        print("hello2")
+        print(result)
+        return {"evaluation": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/store_ideal_solution/")
 def store_ideal_solution(ideal_text: str):

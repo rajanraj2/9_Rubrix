@@ -3,7 +3,6 @@ uvicorn
 sentence-transformers
 numpy
 scikit-learn
-openai-whisper
 torch
 torchaudio
 
@@ -18,3 +17,11 @@ docx2txt
 beautifulsoup4
 pillow
 python-multipart
+
+langchain
+huggingface-hub
+transformers
+torch
+langchain_community
+langchain-community
+langchain-huggingface
