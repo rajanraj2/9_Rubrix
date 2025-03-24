@@ -19,6 +19,7 @@ pillow
 python-multipart
 boto3
 python-dotenv
+ffmpeg-python
 
 langchain
 huggingface-hub

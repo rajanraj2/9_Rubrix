@@ -54,15 +54,14 @@ def evaluate_solution(problem_statement, criteria, submission):
         try:
             result_json = json.loads(json_str)
         except json.JSONDecodeError:
-            result_json = {"error": "Failed to parse response as JSON", "raw_output": response}
+            result_json = {"error": "Failed to parse response as JSON", "raw_output1": response}
     elif isinstance(response, dict):
         result_json = response
     else:
-        result_json = {"error": "Unexpected response type", "raw_output": str(response)}
-    
+        result_json = {"error": "Unexpected response type", "raw_output2": str(response)}
     # Validate that the expected keys are present
-    if "Summary" not in result_json or "Evaluation" not in result_json:
-        result_json = {"error": "Missing required keys in JSON output", "raw_output": response}
+    if "text" not in result_json or "Evaluation" not in result_json:
+        result_json = {"error": "Missing required keys in JSON output", "raw_output3": response}
     
     return result_json
 
