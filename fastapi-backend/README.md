@@ -11,17 +11,19 @@ fastapi-backend/
 ├── requirements.txt       # Project dependencies
 ├── routes/               # API route handlers
 │   ├── evaluate.py       # Evaluation endpoints
-│   ├── transcribe.py     # File transcription endpoints
-│   ├── summary_feedback.py # Summary and feedback generation endpoints
-│   └── ideal_solution.py # Ideal solution management endpoints
+│   ├── summary.py       # Summary generation endpoints
+│   └── transcribe.py     # File transcription endpoints
 ├── services/             # Business logic
-│   ├── evaluation.py     # Evaluation service
-│   ├── transcription.py  # File transcription service
-│   ├── smry_fdbk.py      # Summary and feedback service
-│   └── evaluate_parameters.py # Parameter-based evaluation service
+│   ├── langchain_evaluation.py  # LangChain evaluation service
+│   ├── summariser.py           # Text summarization service
+│   ├── evaluate_parameters.py  # Parameter-based evaluation logic
+│   ├── evaluate_similarity.py  # Similarity scoring service
+│   ├── prompt_templates.py     # Prompt templates for evaluation
+│   └── transcription.py        # File transcription service
 ├── models/               # ML models and utilities
 │   ├── sbert_model.py    # SBERT model for text embeddings
-│   └── whisper_model.py  # Whisper model for audio transcription
+│   ├── whisper_model.py  # Whisper model for audio transcription
+│   └── bart_model.py     # BART model for text summarization
 └── utils/               # Utility functions
 ```
 
@@ -29,34 +31,7 @@ fastapi-backend/
 
 ### 1. Evaluation Endpoints (`/api/evaluate/`)
 
-#### POST `/api/evaluate/submission/`
-Evaluates a student's submission using cosine similarity and parameter-based scoring.
-
-**Request Body:**
-```json
-{
-    "student_text": "Student's submission text",
-    "ideal_text": "Ideal solution text"
-}
-```
-
-**Response:**
-```json
-{
-    "cosine_similarity": {
-        "similarity_score": 85.5,
-        "student_embedding": [...]
-    },
-    "parameter_scores": {
-        "relevance": 85,
-        "clarity": 90,
-        "impact": 88,
-        "completeness": 92
-    }
-}
-```
-
-#### POST `/api/evaluate/evaluate/parameters/`
+#### POST `/api/evaluate/parameters/`
 Evaluates submission based on multiple parameters using SBERT and TF-IDF.
 
 **Request Body:**
@@ -67,6 +42,29 @@ Evaluates submission based on multiple parameters using SBERT and TF-IDF.
     "student_submission": "Student's submission text",
     "sbert_weight": 0.7,
     "tfidf_weight": 0.3
+}
+```
+
+**Response:**
+```json
+{
+    "parameter_scores": {
+        "relevance": {
+            "sbert_similarity": 85.5,
+            "tfidf_similarity": 78.2,
+            "final_score": 82.8
+        },
+        "impact": {
+            "sbert_similarity": 76.3,
+            "tfidf_similarity": 82.1,
+            "final_score": 78.7
+        },
+        "clarity": {
+            "sbert_similarity": 88.4,
+            "tfidf_similarity": 85.6,
+            "final_score": 87.3
+        }
+    }
 }
 ```
 
@@ -99,8 +97,8 @@ Extracts text from uploaded files.
 
 ### 3. Summary and Feedback Endpoints (`/api/generate_summary_feedback/`)
 
-#### POST `/api/generate_summary_feedback/`
-Generates summary and constructive feedback for student submissions.
+#### POST `/api/summary/`
+Generates summary  for student submissions.
 
 **Request Body:**
 ```json
@@ -120,29 +118,6 @@ Generates summary and constructive feedback for student submissions.
 {
     "status": "success",
     "summary": "Generated summary of the submission",
-    "feedback": "Constructive feedback with strengths and areas for improvement"
-}
-```
-
-### 4. Ideal Solution Endpoints (`/api/ideal_solution/`)
-
-#### POST `/api/ideal_solution/store/`
-Stores an ideal solution for future evaluations.
-
-**Request Body:**
-```json
-{
-    "ideal_text": "Ideal solution text",
-    "problem_id": "unique_problem_id"
-}
-```
-
-**Response:**
-```json
-{
-    "status": "success",
-    "message": "Ideal solution stored successfully",
-    "embedding": [...]
 }
 ```
 
@@ -152,6 +127,8 @@ Stores an ideal solution for future evaluations.
 1. Python 3.8 or higher
 2. pip (Python package manager)
 3. Virtual environment (recommended)
+4. Tesseract OCR installed on system
+5. FFmpeg installed on system
 
 ### Setup Instructions
 
@@ -177,16 +154,7 @@ Stores an ideal solution for future evaluations.
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables**
-   ```bash
-   # Windows (PowerShell)
-   $env:HF_API_KEY="your_huggingface_api_key"
-
-   # Linux/Mac
-   export HF_API_KEY="your_huggingface_api_key"
-   ```
-
-5. **Run the server**
+4. **Run the server**
    ```bash
    # Development mode with auto-reload
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -195,7 +163,7 @@ Stores an ideal solution for future evaluations.
    uvicorn main:app --host 0.0.0.0 --port 8000
    ```
 
-6. **Access the API**
+5. **Access the API**
    - API will be available at `http://localhost:8000`
    - Interactive API docs (Swagger UI) at `http://localhost:8000/docs`
    - Alternative API docs (ReDoc) at `http://localhost:8000/redoc`
@@ -209,36 +177,49 @@ Stores an ideal solution for future evaluations.
 
 2. **Run the container**
    ```bash
-   docker run -p 8000:8000 -e HF_API_KEY=your_huggingface_api_key fastapi-backend
+   docker run -p 8000:8000 fastapi-backend
    ```
 
 ## Dependencies
 
-- FastAPI
-- scikit-learn
-- sentence-transformers
-- PyPDF2
-- python-docx
-- pytesseract
-- Pillow
-- requests
-- beautifulsoup4
-- speech_recognition
-- transformers (for Whisper model)
-- uvicorn (ASGI server)
-- python-multipart (for file uploads)
-- pydantic (for data validation)
+- FastAPI==0.115.11
+- uvicorn==0.34.0
+- sentence-transformers==3.4.1
+- numpy==2.0.2
+- scikit-learn==1.5.2
+- torch==2.6.0
+- torchaudio==2.6.0
+- pytesseract==0.3.13
+- openai-whisper==20240930
+- moviepy==2.1.2
+- SpeechRecognition==3.14.1
+- requests==2.32.3
+- python-docx==1.1.2
+- PyPDF2==3.0.1
+- docx2txt==0.8
+- beautifulsoup4==4.12.3
+- pillow==10.4.0
+- python-multipart==0.0.20
+- boto3==1.37.18
+- python-dotenv==1.0.1
+- ffmpeg-python==0.2.0
+- langchain==0.3.21
+- huggingface-hub==0.26.3
+- transformers==4.46.3
+- langchain-community==0.3.20
+- langchain-huggingface==0.1.2
 
 ## Features
 
 - Text similarity evaluation using SBERT embeddings
 - Parameter-based evaluation with customizable criteria
 - Multi-format file transcription
-- AI-powered summary and feedback generation
+- AI-powered summary and feedback generation using BART model
 - Support for various file types and formats
 - RESTful API design with proper error handling
 - Interactive API documentation
 - Docker support for containerization
+- Combined processing endpoint for streamlined workflow
 
 ## Error Handling
 
@@ -255,3 +236,4 @@ Error responses include a status and message field for better debugging.
 - All endpoints are properly typed using Pydantic models
 - Code follows PEP 8 style guidelines
 - Modular architecture for easy maintenance and scaling
+- Local model inference without external API dependencies
