@@ -1,5 +1,5 @@
-# Use Python 3.8 slim image as base
-FROM python:3.8-slim
+# Use Python 3.12 slim image as base
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
@@ -29,6 +29,7 @@ RUN mkdir -p /app/models
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 RUN python -c "import whisper; whisper.load_model('base')"
 RUN python -c "from transformers import AutoModelForSeq2SeqLM, AutoTokenizer; AutoModelForSeq2SeqLM.from_pretrained('facebook/bart-large-cnn'); AutoTokenizer.from_pretrained('facebook/bart-large-cnn')"
+RUN python -c "from transformers import pipeline; pipeline('text2text-generation', model='google/flan-t5-large')"
 
 # Set environment variables
 ENV PYTHONPATH=/app
