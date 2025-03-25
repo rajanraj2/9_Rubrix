@@ -87,6 +87,14 @@ exports.createSubmission = async (req, res) => {
       }));
     }
     
+    // Validate that either submissionText or files are provided
+    if (!submissionText && (!files || files.length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must provide either submission text or files',
+      });
+    }
+    
     // Create submission
     const submission = await Submission.create({
       userId,
@@ -94,6 +102,39 @@ exports.createSubmission = async (req, res) => {
       submissionText,
       files,
     });
+    
+    // After creating the submission, add it to the processing queue
+    try {
+      // Import the Redis client service
+      const { addToSubmissionQueue } = require('../services/redisQueueService');
+      
+      // Get the parameters from the hackathon
+      const parameters = hackathon.parameters.map(param => ({
+        id: param._id.toString(),
+        name: param.name,
+        description: param.description
+      }));
+      
+      // Prepare the submission data for the queue
+      const submissionData = {
+        submission_id: submission._id.toString(),
+        hackathon_id: hackathonId,
+        parameters: parameters,
+        submission_text: submissionText || "",
+      };
+      
+      // If we have files, add the first file's S3 URL to the queue data
+      if (files && files.length > 0) {
+        submissionData.s3_url = files[0].url;
+      }
+      
+      // Add to Redis queue
+      await addToSubmissionQueue(submissionData);
+      console.log('Submission added to processing queue:', submission._id);
+    } catch (queueError) {
+      console.error('Error adding submission to processing queue:', queueError);
+      // We don't want to fail the submission if the queue fails, so just log the error
+    }
     
     res.status(201).json({
       success: true,
@@ -430,6 +471,44 @@ exports.getFilePresignedUrl = async (req, res) => {
     });
   } catch (error) {
     console.error('Error generating presigned URL:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Update a submission evaluation (for worker)
+exports.updateSubmissionEvaluation = async (req, res) => {
+  try {
+    const { evaluation, feedback, totalScore } = req.body;
+    
+    let submission = await Submission.findById(req.params.id);
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found',
+      });
+    }
+    
+    // Update submission evaluation data
+    submission = await Submission.findByIdAndUpdate(
+      req.params.id,
+      { 
+        evaluation, 
+        feedback, 
+        totalScore,
+        evaluatedAt: new Date() 
+      },
+      { new: true, runValidators: true }
+    );
+    
+    res.status(200).json({
+      success: true,
+      data: submission,
+    });
+  } catch (error) {
+    console.error('Worker submission update error:', error);
     res.status(500).json({
       success: false,
       message: error.message,

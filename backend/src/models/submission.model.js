@@ -33,7 +33,7 @@ const submissionSchema = new mongoose.Schema({
   },
   submissionText: {
     type: String,
-    required: [true, 'Submission content is required'],
+    required: false,
   },
   files: [{
     filename: String,

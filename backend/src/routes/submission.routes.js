@@ -9,6 +9,7 @@ const {
 } = require('../controllers/submission.controller');
 const { protect, authorize } = require('../middleware/auth.middleware');
 const { uploadToS3 } = require('../services/s3Service');
+const { workerApiKey } = require('../middleware/worker.middleware');
 
 const router = express.Router();
 
@@ -25,6 +26,9 @@ router.get('/:submissionId/file/:fileIndex/presigned-url', getFilePresignedUrl);
 router.use(authorize('teacher', 'admin'));
 router.put('/:id', updateSubmission);
 router.post('/:id/shortlist', toggleShortlist);
+
+// Worker API route - secured by API key
+router.put('/:id/evaluate', workerApiKey, updateSubmission);
 
 module.exports = router;
  

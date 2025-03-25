@@ -165,12 +165,6 @@ const HackathonSubmission: React.FC = () => {
         alert('Please either provide text or upload at least one file');
         return;
     }
-
-    // Check if submissionText is empty when files are uploaded
-    if (uploadedFiles.length > 0 && !submissionText.trim()) {
-        alert('Please provide a description for your submission along with the files.');
-        return;
-    }
     
     try {
         setIsSubmitting(true);
@@ -178,7 +172,11 @@ const HackathonSubmission: React.FC = () => {
         // Create FormData object for file uploads
         const formData = new FormData();
         formData.append('hackathonId', hackathonId!);
-        formData.append('submissionText', submissionText);
+        
+        // Add submissionText if provided
+        if (submissionText.trim()) {
+            formData.append('submissionText', submissionText);
+        }
         
         // Add each file to the FormData if any
         uploadedFiles.forEach(fileUpload => {
@@ -422,7 +420,7 @@ const HackathonSubmission: React.FC = () => {
                     placeholder="Describe your project or solution here..."
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    You can either provide a text description or upload files, or both.
+                    You can provide a text description, upload files, or both. At least one of them is required.
                   </p>
                 </div>
 
