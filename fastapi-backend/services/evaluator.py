@@ -16,7 +16,9 @@ local_pipeline = pipeline(
     "text2text-generation",
     model=model_name,
     device=device_id,  # Set to 0 for GPU, or -1 for CPU
-    max_length=512,
+    do_sample=True,   # Ensures variability when generating responses
+    max_new_tokens=150,
+    num_beams=4,
     temperature=0.2
 )
 
@@ -30,7 +32,8 @@ prompt_template = PromptTemplate(
 )
 
 # Create the LLMChain that combines the local LLM and the prompt template.
-evaluation_chain = LLMChain(llm=llm_local, prompt=prompt_template)
+# evaluation_chain = LLMChain(llm=llm_local, prompt=prompt_template)
+evaluation_chain = prompt_template | llm_local  # Uses LangChain 0.1.17+ syntax
 
 def evaluate_solution(problem_statement, criteria, submission):
     """
@@ -45,35 +48,37 @@ def evaluate_solution(problem_statement, criteria, submission):
     })
     
     # Debug: Print raw response
-    print("Raw response:", response)
+    # print("Raw response:", response)
     
     # If the response is a string, try to extract JSON via regex; if it's already a dict, use it directly.
-    if isinstance(response, str):
-        json_match = re.search(r"\{.*\}", response, re.DOTALL)
-        json_str = json_match.group(0) if json_match else response
-        try:
-            result_json = json.loads(json_str)
-        except json.JSONDecodeError:
-            result_json = {"error": "Failed to parse response as JSON", "raw_output1": response}
-    elif isinstance(response, dict):
-        result_json = response
-    else:
-        result_json = {"error": "Unexpected response type", "raw_output2": str(response)}
+    # if isinstance(response, str):
+    #     json_match = re.search(r"\{.*\}", response, re.DOTALL)
+    #     json_str = json_match.group(0) if json_match else response
+    #     try:
+    #         result_json = json.loads(json_str)
+    #     except json.JSONDecodeError:
+    #         result_json = {"error": "Failed to parse response as JSON", "raw_output1": response}
+    # elif isinstance(response, dict):
+    #     result_json = response
+    # else:
+    #     result_json = {"error": "Unexpected response type", "raw_output2": str(response)}
+
     # Validate that the expected keys are present
-    if "text" not in result_json or "Evaluation" not in result_json:
-        result_json = {"error": "Missing required keys in JSON output", "raw_output3": response}
-    
+    # if "text" not in result_json or "Evaluation" not in result_json:
+        # result_json = {"error": "Missing required keys in JSON output", "raw_output3": response}
+
+    result_json = response;
     return result_json
 
 # ----- Test the evaluator function -----
 
 # Sample inputs (customize these as needed)
-problem_statement = "How can AI help manage waste in cities?"
-criteria = "feasibility"
-submission = "Using AI to differentiate between types of waste to optimize recycling and waste management."
+# problem_statement = "How can AI help manage waste in cities?"
+# criteria = "feasibility"
+# submission = "Using AI to differentiate between types of waste to optimize recycling and waste management."
 
 # Get evaluation result
-result = evaluate_solution(problem_statement, criteria, submission)
+# result = evaluate_solution(problem_statement, criteria, submission)
 
 # Print the structured JSON evaluation
-print(json.dumps(result, indent=4))
+# print(json.dumps(result, indent=4))

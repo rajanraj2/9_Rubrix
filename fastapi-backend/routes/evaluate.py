@@ -408,14 +408,11 @@ class GeneralEvaluationRequest(BaseModel):
 @router.post("/evaluate")
 def evaluate_general(request: GeneralEvaluationRequest):
     try:
-        print("hello")
         result = evaluate_solution(
             problem_statement=request.problem_statement,
             criteria=request.criteria,
             submission=request.submission
         )
-        print("hello2")
-        print(result)
         return {"evaluation": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
