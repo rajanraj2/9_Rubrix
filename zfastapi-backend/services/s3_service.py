@@ -173,7 +173,7 @@ async def process_file_from_s3(
         # Extract text from file if s3_url is provided
         if s3_url:
             # Download file from S3
-            local_file_path = await download_file_from_s3(s3_url)
+            local_file_path, file_ext = download_from_s3(s3_url)
             
             if not local_file_path or not os.path.exists(local_file_path):
                 return {
@@ -184,7 +184,7 @@ async def process_file_from_s3(
                 }
             
             # Extract text from file
-            extracted_text = extract_text(local_file_path)
+            extracted_text = extract_text(local_file_path, file_ext)
             
             # Clean up the temporary file
             try:
