@@ -251,7 +251,7 @@ exports.getHackathon = async (req, res) => {
       }
     } else if (req.user.role === 'teacher') {
       // Check if teacher is creator or collaborator
-      const isCreator = hackathon.createdBy.toString() === req.user.id;
+      const isCreator = hackathon.createdBy._id.toString() === req.user.id;
       const isCollaborator = hackathon.collaborators.some(
         collaborator => collaborator._id.toString() === req.user.id
       );
@@ -279,6 +279,7 @@ exports.getHackathon = async (req, res) => {
       data: hackathonWithCounts,
     });
   } catch (error) {
+    console.log("hello2")
     res.status(500).json({
       success: false,
       message: error.message,

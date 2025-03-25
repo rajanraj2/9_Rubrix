@@ -176,7 +176,7 @@ async function processSubmission(submission) {
     // Log the response
     console.log(`Processed submission ID: ${submission.submission_id}`);
     console.log(`Status: ${response.data.status}`);
-    console.log(`Overall score: ${response.data.overall_score || 'N/A'}`);
+    // console.log(`Overall score: ${response.data.overall_score || 'N/A'}`);
     
     if (response.data.status === 'success') {
       console.log(`Submission ${submission.submission_id} successfully processed and stored in database`);
@@ -185,12 +185,12 @@ async function processSubmission(submission) {
       throw new Error(`FastAPI processing failed: ${response.data.message || 'Unknown error'}`);
     }
   } catch (error) {
-    console.error(`Error processing submission ${submission.submission_id}:`, error.message);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-    }
-    throw error;
+    // console.error(`Error processing submission ${submission.submission_id}:`, error.message);
+    // if (error.response) {
+    //   console.error('Response data:', error.response.data);
+    //   console.error('Response status:', error.response.status);
+    // }
+    // throw error;
   }
 }
 
@@ -224,7 +224,7 @@ async function workerLoop() {
           // Process the submission
           await processSubmission(submission);
         } catch (error) {
-          console.error('Error in processing submission:', error.message);
+          // console.error('Error in processing submission:', error.message);
           // In a production environment, you might want to implement retries or a dead-letter queue
         }
       }
