@@ -8,9 +8,9 @@ from routes.summary import router as summary_router
 app = FastAPI(title="AI Evaluation Service", version="1.0")
 
 # Include API routes
-app.include_router(evaluate_router, prefix="/api/evaluate")
-app.include_router(transcription_router, prefix="/api")
-app.include_router(summary_router, prefix="/api/summary")
+app.include_router(evaluate_router, tags=["Evaluation"], prefix="/api")
+app.include_router(transcription_router, tags=["Transcription"], prefix="/api")
+app.include_router(summary_router, tags=["Summary"], prefix="/api/summary")
 # app.include_router(summary_feedback_router, prefix="/api/summary_feedback")
 # app.include_router(transcription_s3_router, prefix="/api/transcribe_s3")
 

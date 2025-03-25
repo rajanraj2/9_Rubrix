@@ -8,7 +8,7 @@ class SummaryRequest(BaseModel):
     problem_statement: str
     student_submission: str
 
-@router.post("/summary/")
+@router.post("/", summary="Generate summary", description="Generate a summary of a student submission using a local BART model")
 def get_summary(request: SummaryRequest):
     """
     Generates a summary of the student submission using a local BART model.
