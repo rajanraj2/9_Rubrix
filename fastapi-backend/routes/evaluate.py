@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List
-from services.evaluation import compute_similarity, parameter_based_evaluation, generate_embedding
+from services.evaluate_similarity import compute_similarity, generate_embedding
 from services.evaluate_parameters import evaluate_parameters
-from services.evaluator import evaluate_solution
+from services.langchain_evaluation import evaluate_solution
 
 router = APIRouter()
 
@@ -400,7 +400,7 @@ ideal_solution_store = {
 }
 
 # Request schema for general evaluation using LangChain
-class GeneralEvaluationRequest(BaseModel):
+class GeneralEvaluationRequest(BaseModel):  
     problem_statement: str
     criteria: str
     submission: str
@@ -437,11 +437,11 @@ def evaluate_submission(student_text: str):
 
     ideal_embedding = ideal_solution_store["embedding"]  # Retrieve stored ideal embeddings
     similarity_data = compute_similarity(student_text, ideal_embedding)
-    parameter_scores = parameter_based_evaluation(student_text)
+    # parameter_scores = parameter_based_evaluation(student_text)
 
     return {
         "cosine_similarity": similarity_data["similarity_score"],
-        "parameter_scores": parameter_scores,
+        # "parameter_scores": parameter_scores,
         "student_embedding": similarity_data["student_embedding"]
     }
 

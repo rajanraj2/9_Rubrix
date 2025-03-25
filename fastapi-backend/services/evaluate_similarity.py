@@ -17,12 +17,12 @@ def compute_similarity(student_text: str, ideal_embedding):
         "student_embedding": student_embedding.tolist()  # Convert NumPy array to list for JSON
     }
 
-def parameter_based_evaluation(text: str):
-    """Rule-based evaluation based on predefined parameters."""
-    scores = {
-        "relevance": int(np.random.randint(50, 100)),
-        "clarity": int(np.random.randint(50, 100)),
-        "impact": int(np.random.randint(50, 100)),
-        "completeness": int(np.random.randint(50, 100)),
-    }
-    return scores
+# def parameter_based_evaluation(text: str):
+#     """Rule-based evaluation based on predefined parameters."""
+#     scores = {
+#         "relevance": int(np.random.randint(50, 100)),
+#         "clarity": int(np.random.randint(50, 100)),
+#         "impact": int(np.random.randint(50, 100)),
+#         "completeness": int(np.random.randint(50, 100)),
+#     }
+#     return scores
