@@ -418,32 +418,47 @@ def evaluate_general(request: GeneralEvaluationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/store_ideal_solution/")
-def store_ideal_solution(ideal_text: str):
-    """
-    Stores the ideal solution embeddings when a hackathon is created.
-    """
-    embedding = generate_embedding(ideal_text)
-    ideal_solution_store["embedding"] = embedding.tolist()  # Convert NumPy array to list (JSON serializable)
-    return {"message": "Ideal solution stored successfully", "embedding": embedding.tolist()}
+# @router.post("/store_ideal_solution/")
+# def store_ideal_solution(ideal_text: str):
+#     """
+#     Stores the ideal solution embeddings when a hackathon is created.
+#     """
+#     embedding = generate_embedding(ideal_text)
+#     ideal_solution_store["embedding"] = embedding.tolist()  # Convert NumPy array to list (JSON serializable)
+#     return {"message": "Ideal solution stored successfully", "embedding": embedding.tolist()}
 
-@router.post("/submission/")
-def evaluate_submission(student_text: str):
-    """
-    Evaluates a student's submission using pre-stored ideal solution embeddings.
-    """
-    if "embedding" not in ideal_solution_store:
-        return {"error": "Ideal solution embeddings not stored. Please upload first."}
+# @router.post("/submission/")
+# def evaluate_submission(student_text: str):
+#     """
+#     Evaluates a student's submission using pre-stored ideal solution embeddings.
+#     """
+#     if "embedding" not in ideal_solution_store:
+#         return {"error": "Ideal solution embeddings not stored. Please upload first."}
 
-    ideal_embedding = ideal_solution_store["embedding"]  # Retrieve stored ideal embeddings
-    similarity_data = compute_similarity(student_text, ideal_embedding)
-    # parameter_scores = parameter_based_evaluation(student_text)
+#     ideal_embedding = ideal_solution_store["embedding"]  # Retrieve stored ideal embeddings
+#     similarity_data = compute_similarity(student_text, ideal_embedding)
+#     # parameter_scores = parameter_based_evaluation(student_text)
 
-    return {
-        "cosine_similarity": similarity_data["similarity_score"],
-        # "parameter_scores": parameter_scores,
-        "student_embedding": similarity_data["student_embedding"]
-    }
+#     return {
+#         "cosine_similarity": similarity_data["similarity_score"],
+#         # "parameter_scores": parameter_scores,
+#         "student_embedding": similarity_data["student_embedding"]
+#     }
+
+@router.post("/evaluate/similarity/")
+def evaluate_submission(problem_statement: str, student_submission: str):
+    """
+    Computes cosine similarity between the problem statement and student submission.
+    """
+    try:
+        similarity_data = compute_similarity(problem_statement, student_submission)
+        return {
+            "cosine_similarity": similarity_data["similarity_score"],
+            "student_embedding": similarity_data["student_embedding"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Define request schema
 class EvaluationRequest(BaseModel):
@@ -481,22 +496,3 @@ def evaluate_submission(request: EvaluationRequest):
             "status": "error",
             "message": str(e)
         }
-
-
-# from fastapi import APIRouter
-# from services.evaluation import compute_similarity, parameter_based_evaluation
-
-# router = APIRouter()
-
-# @router.post("/submission/")
-# def evaluate_submission(student_text: str, ideal_text: str):
-#     """
-#     Evaluates a student's submission based on cosine similarity and rule-based scoring.
-#     """
-#     similarity_score = compute_similarity(student_text, ideal_text)
-#     parameter_scores = parameter_based_evaluation(student_text)
-
-#     return {
-#         "cosine_similarity": similarity_score,
-#         "parameter_scores": parameter_scores
-#     }
