@@ -322,8 +322,7 @@ const CreateHackathon: React.FC = () => {
       <Sidebar role="teacher" />
       <main className="flex-1 p-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Create New Hackathon</h1>
-          <p className="text-gray-600 mt-1">Set up a new hackathon for your students</p>
+          <p className="text-gray-600 mt-[60px] text-3xl font-semibold">Set up a new hackathon for your students</p>
         </div>
 
         {error && (

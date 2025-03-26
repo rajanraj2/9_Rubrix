@@ -277,39 +277,6 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
           </div>
         )}
       </div>
-      
-      <div className="border-t p-4">
-        <h4 className="text-sm font-medium text-gray-500 mb-3">Scoring Parameters</h4>
-        <div className="space-y-3">
-          {Object.entries(submission.parameters).map(([key, value]) => (
-            <div key={key}>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
-                <span className="text-xs font-medium text-gray-700">{Math.round(value)}/100</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`${getScoreColor(value)} h-2 rounded-full`}
-                  style={{ width: `${value}%` }}
-                ></div>
-              </div>
-            </div>
-          ))}
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-xs font-medium text-gray-700">Overall</span>
-              <span className="text-xs font-medium text-gray-700">{Math.round(submission.overallScore)}/100</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`${getScoreColor(submission.overallScore)} h-2 rounded-full`}
-                style={{ width: `${submission.overallScore}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

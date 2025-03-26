@@ -339,7 +339,7 @@ const HackathonDetails = () => {
       <Sidebar role="teacher" />
       <main className="flex-1 p-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">{hackathon.title}</h1>
+          <h1 className="text-2xl mt-[60px] font-semibold text-gray-900">{hackathon.title}</h1>
           <p className="text-gray-600 mt-1">{hackathon.description}</p>
           
 

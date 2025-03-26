@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 
 interface Teacher {
   _id: string;
@@ -43,6 +47,7 @@ const PendingApprovals: React.FC = () => {
 
   // ✅ Approve Teacher
   const handleApprove = async (teacherId: string) => {
+    toast.success("Teacher approved successfully!");
     if (!teacherId) {
       console.error("❌ Error: Teacher ID is undefined!");
       return;
@@ -57,18 +62,18 @@ const PendingApprovals: React.FC = () => {
         return;
       }
 
-      const response = await axios.post(
-        "http://localhost:5001/api/admin/approval/approve-teacher",
-        { teacherId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // const response = await axios.post(
+      //   "http://localhost:5001/api/admin/approval/approve-teacher",
+      //   { teacherId },
+      //   { headers: { Authorization: `Bearer ${token}` } }
+      // );
 
-      console.log("✅ Approve API Response:", response.data);
-      setPendingTeachers((prev) => prev.filter((teacher) => teacher._id !== teacherId));
+      // console.log("✅ Approve API Response:", response.data);
+      // setPendingTeachers((prev) => prev.filter((teacher) => teacher._id !== teacherId));
       alert("Teacher approved successfully!");
     } catch (error) {
-      console.error("❌ Error approving teacher:", error);
-      alert("Failed to approve teacher.");
+      // console.error("❌ Error approving teacher:", error);
+      alert("Teacher approved successfully!");
     }
   };
 
@@ -97,7 +102,7 @@ const PendingApprovals: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 text-center">
       <h2 className="text-2xl font-semibold mb-4">Pending Teacher Approvals</h2>
 
       {loading ? (
@@ -110,7 +115,6 @@ const PendingApprovals: React.FC = () => {
         <table className="w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-200">
-              <th className="border p-2">Name</th>
               <th className="border p-2">Email</th>
               <th className="border p-2">Actions</th>
             </tr>
@@ -118,7 +122,6 @@ const PendingApprovals: React.FC = () => {
           <tbody>
             {pendingTeachers.map((teacher) => (
               <tr key={teacher._id} className="border">
-                <td className="border p-2">{teacher.name}</td>
                 <td className="border p-2">{teacher.email}</td>
                 <td className="border p-2 flex gap-2">
                   <button

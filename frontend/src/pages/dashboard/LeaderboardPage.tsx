@@ -213,7 +213,7 @@ const LeaderboardPage: React.FC = () => {
               id: item._id,
               _id: item._id,
               studentName: item.userId?.fullName || 'Unknown Student',
-              submissionTitle: item.submissionText?.substring(0, 50) || 'Untitled Submission',
+              submissionTitle: item.submissionText?.substring(0, 20) || 'Untitled Submission',
               submissionDate: item.submittedAt,
               overallScore: item.totalScore || 0,
               parameters,
@@ -549,7 +549,7 @@ const LeaderboardPage: React.FC = () => {
       <Sidebar role="teacher" />
       <main className="flex-1 p-6 overflow-hidden">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Leaderboard</h1>
+          <h1 className="text-2xl mt-[60px] font-semibold text-gray-900">Leaderboard</h1>
           <p className="text-gray-600 mt-1">View and manage all submissions for this hackathon</p>
         </div>
 

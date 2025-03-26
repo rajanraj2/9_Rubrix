@@ -368,10 +368,10 @@ const StudentDashboard: React.FC = () => {
       <Sidebar role="student" />
       <main className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Student Dashboard</h1>
+          <h1 className="text-2xl mt-[60px] font-semibold text-gray-900">Student Dashboard</h1>
           <button
             onClick={handleRefresh}
-            className={`inline-flex items-center text-indigo-600 hover:text-indigo-800 ${
+            className={`inline-flex items-center mt-[60px] text-indigo-600 hover:text-indigo-800 ${
               refreshing ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={refreshing}

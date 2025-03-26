@@ -136,7 +136,7 @@ const TeacherDashboard = () => {
       <main className="flex-1 p-6">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-gray-900">Teacher Dashboard</h1>
-          <p className="text-gray-600 mt-1">Manage your hackathons and view student submissions</p>
+          <p className="text-gray-600 mt-10 font-semibold text-3xl">Manage your hackathons and view student submissions</p>
         </div>
 
         {/* Tabs */}
