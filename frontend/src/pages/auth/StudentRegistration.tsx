@@ -50,6 +50,8 @@ const StudentRegistration = () => {
     }
   };
 
+
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Student Registration</h2>

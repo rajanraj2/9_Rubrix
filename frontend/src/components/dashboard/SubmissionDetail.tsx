@@ -1,95 +1,100 @@
 import React, { useState, useEffect } from 'react';
-
-import { X } from 'lucide-react';
-import axios from 'axios';
+import { X, Edit2, Save, FileText, Download } from 'lucide-react';
 import { submissionAPI } from '../../lib/api';
 
 interface SubmissionDetailProps {
-  submissionId: string | undefined;
-  hackathonId: string | undefined;
-
+  submission: {
+    id: string;
+    _id?: string;
+    studentName: string;
+    submissionTitle: string;
+    submissionDate: string;
+    overallScore: number;
+    parameters: {
+      [key: string]: number;
+    };
+    isShortlisted: boolean;
+    submissionText?: string;
+    files?: Array<{
+      filename: string;
+      path: string;
+      mimetype: string;
+      url?: string;
+    }>;
+    feedback?: string;
+    summary_feedback?: {
+      summary: string;
+      feedback: string;
+      performance_category: string;
+    };
+  };
   onClose: () => void;
   fullSubmission?: boolean;
 }
 
-
-// Submission Interface (From Node.js Backend)
-interface Submission {
-  id?: string;
-  studentName: string;
-  submissionTitle: string;
-  submissionDate: string;
-  overallScore: number;
-  isShortlisted: boolean;
-  files?: Array<{
-    filename: string;
-    path: string;
-    mimetype: string;
-    size: number;
-    url: string;
-  }>;
-  description?: string;
-  technologies?: string[];
-  screenshot?: string;
-  repositoryUrl?: string;
-  approach?: string;
-  challenges?: string;
-  learnings?: string;
-}
-
-// Evaluation Interface (From FastAPI Backend)
-interface Evaluation {
-  submission_id: string;
-  parameter_scores: Record<string, { id: string; score: number; description: string }>;
-  overall_score: number;
-  summary_feedback: { summary: string; feedback: string; performance_category: string };
-}
-
-const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hackathonId, onClose }) => {
+const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ 
+  submission, 
+  onClose,
+  fullSubmission = false 
+}) => {
   const [activeTab, setActiveTab] = useState<'preview' | 'summary' | 'feedback'>('preview');
-  const [submission, setSubmission] = useState<Submission | null>(null);
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  const [feedback, setFeedback] = useState(submission.feedback || "");
+  const [fileUrls, setFileUrls] = useState<{[key: string]: string}>({});
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
+  // Function to fetch file URLs from S3
   useEffect(() => {
-    const fetchSubmissionDetails = async () => {
-      if (!submissionId) return;
-
+    const getFileUrls = async () => {
+      if (!submission.files || submission.files.length === 0 || !fullSubmission) return;
+      
+      setIsLoadingFiles(true);
+      
       try {
-        const response = await submissionAPI.getSubmission(submissionId);
-        if (response.data.success) {
-          setSubmission(response.data.data);
-        }
+        const fileUrlsObj: {[key: string]: string} = {};
+        
+        // For each file, get a presigned URL
+        await Promise.all(
+          submission.files.map(async (file, index) => {
+            try {
+              const response = await submissionAPI.getFilePresignedUrl(
+                submission.id || submission._id || '', 
+                index
+              );
+              fileUrlsObj[file.filename] = response.data.url;
+            } catch (error) {
+              console.error(`Error getting URL for file ${file.filename}:`, error);
+            }
+          })
+        );
+        
+        setFileUrls(fileUrlsObj);
       } catch (error) {
-        console.error("Error fetching submission details:", error);
-      }
-    };
-
-    const fetchEvaluationDetails = async () => {
-      if (!hackathonId || !submissionId) return;
-
-      try {
-        const response = await axios.get(`http://localhost:8000/hackathon/${hackathonId}/evaluations`);
-        const evaluations = response.data.submissions;
-
-        // Find the evaluation result for the selected submission
-        const submissionEvaluation = evaluations.find((evalResult: Evaluation) => evalResult.submission_id === submissionId);
-        setEvaluation(submissionEvaluation || null);
-      } catch (error) {
-        console.error("Error fetching evaluation results:", error);
+        console.error('Error fetching file URLs:', error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingFiles(false);
       }
     };
+    
+    getFileUrls();
+  }, [submission.id, submission._id, submission.files, fullSubmission]);
 
-    fetchSubmissionDetails();
-    fetchEvaluationDetails();
-  }, [submissionId, hackathonId]);
+  const handleSaveFeedback = async () => {
+    if (!feedback.trim()) return;
+    
+    try {
+      await submissionAPI.evaluateSubmission(submission.id || submission._id || '', {
+        feedback,
+        evaluation: []
+      });
+      
+      setIsEditingFeedback(false);
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+    }
+  };
 
-  if (isLoading) return <div className="p-6 text-gray-600">Loading submission details...</div>;
-  if (!submission) return <div className="p-6 text-gray-600">No submission found.</div>;
-
-
+  // Function to render score bars with colored backgrounds based on score
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'bg-green-500';
     if (score >= 60) return 'bg-yellow-500';
@@ -112,76 +117,130 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="text-lg font-medium text-gray-900">Submission Details</h3>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <button 
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
-
-      {/* Tabs */}
+      
       <div className="flex border-b">
-        {['preview', 'summary', 'feedback'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as 'preview' | 'summary' | 'feedback')}
-            className={`flex-1 py-2 text-center ${
-              activeTab === tab ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`flex-1 py-2 text-center ${
+            activeTab === 'preview'
+              ? 'border-b-2 border-indigo-600 text-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Preview
+        </button>
+        <button
+          onClick={() => setActiveTab('summary')}
+          className={`flex-1 py-2 text-center ${
+            activeTab === 'summary'
+              ? 'border-b-2 border-indigo-600 text-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Summary
+        </button>
+        <button
+          onClick={() => setActiveTab('feedback')}
+          className={`flex-1 py-2 text-center ${
+            activeTab === 'feedback'
+              ? 'border-b-2 border-indigo-600 text-indigo-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Feedback
+        </button>
       </div>
-
-      {/* Content */}
+      
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Preview Tab */}
         {activeTab === 'preview' && (
           <div className="space-y-4">
-
-            <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
-            <p className="text-base font-medium">{submission.submissionTitle}</p>
-
-            <h4 className="text-sm font-medium text-gray-500">Description</h4>
-            <p className="text-sm">{submission.description || 'No description available.'}</p>
-
-            <h4 className="text-sm font-medium text-gray-500">Technologies Used</h4>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {submission.technologies?.map((tech, index) => (
-                <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-md">{tech}</span>
-              ))}
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
+              <p className="text-base font-medium">{submission.submissionTitle}</p>
             </div>
-
-            <h4 className="text-sm font-medium text-gray-500">Repository</h4>
-            <a href={submission.repositoryUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
-              {submission.repositoryUrl || 'No repository link provided'}
-            </a>
-
+            
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Description</h4>
+              <p className="text-sm whitespace-pre-line">{getSubmissionContent()}</p>
+            </div>
+            
+            {fullSubmission && submission.files && submission.files.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Files</h4>
+                
+                {isLoadingFiles ? (
+                  <div className="flex justify-center items-center h-24">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {submission.files.map((file, index) => (
+                      <div key={index} className="p-2 border rounded-md flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                          <span className="text-sm text-gray-700">{file.filename}</span>
+                        </div>
+                        {fileUrls[file.filename] && (
+                          <a
+                            href={fileUrls[file.filename]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 flex items-center"
+                            download={file.filename}
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            <span className="text-sm">Download</span>
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
-
-        {/* Summary Tab */}
+        
         {activeTab === 'summary' && (
           <div className="space-y-4">
-
-            <h4 className="text-sm font-medium text-gray-500">Approach</h4>
-            <p className="text-sm">{submission.approach || 'Approach details not available.'}</p>
-
-            <h4 className="text-sm font-medium text-gray-500">Challenges Faced</h4>
-            <p className="text-sm">{submission.challenges || 'Challenges not provided.'}</p>
-
-            <h4 className="text-sm font-medium text-gray-500">Learnings</h4>
-            <p className="text-sm">{submission.learnings || 'No learnings shared.'}</p>
-
+            {submission.summary_feedback ? (
+              <>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Performance Category</h4>
+                  <p className="text-sm font-medium mt-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full inline-block">
+                    {submission.summary_feedback.performance_category}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Summary</h4>
+                  <p className="text-sm">{submission.summary_feedback.summary}</p>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">AI Feedback</h4>
+                  <p className="text-sm whitespace-pre-line">{submission.summary_feedback.feedback}</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No summary feedback available for this submission.</p>
+              </div>
+            )}
           </div>
         )}
-
-        {/* Feedback Tab */}
-        {activeTab === 'feedback' && evaluation && (
+        
+        {activeTab === 'feedback' && (
           <div className="space-y-4">
-
             <div className="flex justify-between items-start">
               <h4 className="text-sm font-medium text-gray-500">Teacher's Feedback</h4>
               {!isEditingFeedback ? (
@@ -215,45 +274,44 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
                 placeholder="Provide feedback..."
               />
             )}
-
           </div>
         )}
       </div>
-
-      {/* Scoring Parameters */}
-      {evaluation && (
-        <div className="border-t p-4">
-          <h4 className="text-sm font-medium text-gray-500 mb-3">Scoring Parameters</h4>
-          <div className="space-y-3">
-            {Object.entries(evaluation.parameter_scores).map(([key, value]) => (
-              <div key={value.id}>
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
-                  <span className="text-xs font-medium text-gray-700">{value.score}/100</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className={`${getScoreColor(value.score)} h-2 rounded-full`} style={{ width: `${value.score}%` }}></div>
-                </div>
-              </div>
-            ))}
-            {/* Overall Score */}
-            <div>
+      
+      <div className="border-t p-4">
+        <h4 className="text-sm font-medium text-gray-500 mb-3">Scoring Parameters</h4>
+        <div className="space-y-3">
+          {Object.entries(submission.parameters).map(([key, value]) => (
+            <div key={key}>
               <div className="flex justify-between mb-1">
-
-                <span className="text-xs font-medium text-gray-700">Overall</span>
-                <span className="text-xs font-medium text-gray-700">{evaluation.overall_score}/100</span>
-
+                <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
+                <span className="text-xs font-medium text-gray-700">{Math.round(value)}/100</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className={`${getScoreColor(evaluation.overall_score)} h-2 rounded-full`} style={{ width: `${evaluation.overall_score}%` }}></div>
+                <div
+                  className={`${getScoreColor(value)} h-2 rounded-full`}
+                  style={{ width: `${value}%` }}
+                ></div>
               </div>
             </div>
-
+          ))}
+          
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-xs font-medium text-gray-700">Overall</span>
+              <span className="text-xs font-medium text-gray-700">{Math.round(submission.overallScore)}/100</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`${getScoreColor(submission.overallScore)} h-2 rounded-full`}
+                style={{ width: `${submission.overallScore}%` }}
+              ></div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default SubmissionDetail;
+export default SubmissionDetail; 

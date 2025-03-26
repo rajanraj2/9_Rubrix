@@ -40,6 +40,7 @@ interface UserData {
   gender?: string;
   
   schoolCollegeName?: string;
+  schoolName?: string;
 }
 
 interface Participant {
@@ -194,7 +195,9 @@ const HackathonDetails = () => {
       }
 
       // Count by school
+
       const school = user.schoolCollegeName || user.schoolCollegeName;
+
       if (school) {
         schoolCount[school] = (schoolCount[school] || 0) + 1;
       }
@@ -662,46 +665,6 @@ const HackathonDetails = () => {
                     <YAxis />
                     <Tooltip />
                     <Bar dataKey="value" fill="#4F46E5" name="Students" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Top Districts</h3>
-              <div className="h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={districtData
-                      .sort((a, b) => b.value - a.value)
-                      .slice(0, 5)}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={100} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#10B981" name="Students" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Top Schools</h3>
-              <div className="h-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={schoolData
-                      .sort((a, b) => b.value - a.value)
-                      .slice(0, 7)}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={150} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#F59E0B" name="Students" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
