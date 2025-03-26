@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
 
   const teacherLinks = [
     { icon: LayoutDashboard, label: 'Current Hackathons', href: '/dashboard/teacher' },
-    { icon: Plus, label: 'Create Hackathon', href: '/dashboard/teacher/create' },
+    { icon: Plus, label: 'Create Hackathon', href: '/dashboard/teacher/create-hackathon' },
   ];
 
   const hackathonLinks = hackathonId ? [
