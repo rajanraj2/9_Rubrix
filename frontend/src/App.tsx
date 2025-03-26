@@ -14,6 +14,7 @@ import HackathonSubmission from './pages/dashboard/HackathonSubmission';
 import CreateHackathon from './pages/dashboard/CreateHackathon';
 import LeaderboardPage from './pages/dashboard/LeaderboardPage';
 import ShortlistedPage from './pages/dashboard/ShortlistedPage';
+import SubmissionViewPage from './pages/dashboard/SubmissionViewPage';
 import Navbar from './components/Navbar';
 
 // Protected route component
@@ -62,6 +63,7 @@ const AppWithAuth = () => {
           <Route path="/dashboard/teacher/hackathon/:hackathonId" element={<HackathonDetails />} />
           <Route path="/dashboard/teacher/hackathon/:hackathonId/leaderboard" element={<LeaderboardPage />} />
           <Route path="/dashboard/teacher/hackathon/:hackathonId/shortlisted" element={<ShortlistedPage />} />
+          <Route path="/dashboard/teacher/submission/:submissionId" element={<SubmissionViewPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

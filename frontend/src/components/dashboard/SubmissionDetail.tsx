@@ -1,51 +1,97 @@
-import React, { useState } from 'react';
-import { X, Edit2, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Edit2, Save, FileText, Download } from 'lucide-react';
+import { submissionAPI } from '../../lib/api';
 
 interface SubmissionDetailProps {
   submission: {
     id: string;
+    _id?: string;
     studentName: string;
     submissionTitle: string;
     submissionDate: string;
     overallScore: number;
     parameters: {
-      innovation: number;
-      technical: number;
-      design: number;
-      presentation: number;
       [key: string]: number;
     };
     isShortlisted: boolean;
+    submissionText?: string;
+    files?: Array<{
+      filename: string;
+      path: string;
+      mimetype: string;
+      url?: string;
+    }>;
+    feedback?: string;
+    summary_feedback?: {
+      summary: string;
+      feedback: string;
+      performance_category: string;
+    };
   };
   onClose: () => void;
+  fullSubmission?: boolean;
 }
 
-const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose }) => {
+const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ 
+  submission, 
+  onClose,
+  fullSubmission = false 
+}) => {
   const [activeTab, setActiveTab] = useState<'preview' | 'summary' | 'feedback'>('preview');
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
-  const [feedback, setFeedback] = useState(
-    "This project shows great potential. The technical implementation is solid, but there's room for improvement in the UI/UX design. Consider adding more user-friendly features and improving the documentation. Overall, a commendable effort!"
-  );
+  const [feedback, setFeedback] = useState(submission.feedback || "");
+  const [fileUrls, setFileUrls] = useState<{[key: string]: string}>({});
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
-  // Sample project preview content
-  const previewContent = {
-    title: submission.submissionTitle,
-    description: "This project aims to solve problems in the healthcare sector by implementing AI-driven solutions for early disease detection. The application uses machine learning algorithms to analyze patient data and provide preliminary diagnoses.",
-    technologies: ["React", "Node.js", "TensorFlow", "MongoDB"],
-    screenshot: "https://placehold.co/600x400",
-    repositoryUrl: "https://github.com/student/project",
-  };
+  // Function to fetch file URLs from S3
+  useEffect(() => {
+    const getFileUrls = async () => {
+      if (!submission.files || submission.files.length === 0 || !fullSubmission) return;
+      
+      setIsLoadingFiles(true);
+      
+      try {
+        const fileUrlsObj: {[key: string]: string} = {};
+        
+        // For each file, get a presigned URL
+        await Promise.all(
+          submission.files.map(async (file, index) => {
+            try {
+              const response = await submissionAPI.getFilePresignedUrl(
+                submission.id || submission._id || '', 
+                index
+              );
+              fileUrlsObj[file.filename] = response.data.url;
+            } catch (error) {
+              console.error(`Error getting URL for file ${file.filename}:`, error);
+            }
+          })
+        );
+        
+        setFileUrls(fileUrlsObj);
+      } catch (error) {
+        console.error('Error fetching file URLs:', error);
+      } finally {
+        setIsLoadingFiles(false);
+      }
+    };
+    
+    getFileUrls();
+  }, [submission.id, submission._id, submission.files, fullSubmission]);
 
-  // Sample summary content
-  const summaryContent = {
-    approach: "The project uses a combination of supervised and unsupervised learning algorithms to analyze patient data. The frontend is built with React for a responsive and accessible interface.",
-    challenges: "Major challenges included data preprocessing, model training optimization, and ensuring HIPAA compliance for data privacy.",
-    learnings: "The team learned valuable lessons about healthcare data management, machine learning model deployment, and creating user-friendly interfaces for medical professionals.",
-  };
-
-  const handleSaveFeedback = () => {
-    setIsEditingFeedback(false);
-    // Here you would typically save the feedback to your backend
+  const handleSaveFeedback = async () => {
+    if (!feedback.trim()) return;
+    
+    try {
+      await submissionAPI.evaluateSubmission(submission.id || submission._id || '', {
+        feedback,
+        evaluation: []
+      });
+      
+      setIsEditingFeedback(false);
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+    }
   };
 
   // Function to render score bars with colored backgrounds based on score
@@ -54,6 +100,19 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
     if (score >= 60) return 'bg-yellow-500';
     if (score >= 40) return 'bg-orange-500';
     return 'bg-red-500';
+  };
+
+  // Get the actual submission content - either from summary_feedback or real text
+  const getSubmissionContent = () => {
+    if (submission.submissionText) {
+      return submission.submissionText;
+    }
+    
+    if (submission.summary_feedback?.summary) {
+      return submission.summary_feedback.summary;
+    }
+    
+    return "This project description is not available.";
   };
 
   return (
@@ -106,64 +165,77 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
-              <p className="text-base font-medium">{previewContent.title}</p>
+              <p className="text-base font-medium">{submission.submissionTitle}</p>
             </div>
             
             <div>
               <h4 className="text-sm font-medium text-gray-500">Description</h4>
-              <p className="text-sm">{previewContent.description}</p>
+              <p className="text-sm whitespace-pre-line">{getSubmissionContent()}</p>
             </div>
             
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Technologies Used</h4>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {previewContent.technologies.map((tech) => (
-                  <span key={tech} className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-md">
-                    {tech}
-                  </span>
-                ))}
+            {fullSubmission && submission.files && submission.files.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Files</h4>
+                
+                {isLoadingFiles ? (
+                  <div className="flex justify-center items-center h-24">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {submission.files.map((file, index) => (
+                      <div key={index} className="p-2 border rounded-md flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                          <span className="text-sm text-gray-700">{file.filename}</span>
+                        </div>
+                        {fileUrls[file.filename] && (
+                          <a
+                            href={fileUrls[file.filename]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 flex items-center"
+                            download={file.filename}
+                          >
+                            <Download className="w-4 h-4 mr-1" />
+                            <span className="text-sm">Download</span>
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Project Screenshot</h4>
-              <img 
-                src={previewContent.screenshot} 
-                alt="Project Screenshot" 
-                className="mt-1 rounded-md w-full object-cover h-48"
-              />
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Repository</h4>
-              <a 
-                href={previewContent.repositoryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-indigo-600 hover:underline"
-              >
-                {previewContent.repositoryUrl}
-              </a>
-            </div>
+            )}
           </div>
         )}
         
         {activeTab === 'summary' && (
           <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Approach</h4>
-              <p className="text-sm">{summaryContent.approach}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Challenges Faced</h4>
-              <p className="text-sm">{summaryContent.challenges}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Learnings</h4>
-              <p className="text-sm">{summaryContent.learnings}</p>
-            </div>
+            {submission.summary_feedback ? (
+              <>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Performance Category</h4>
+                  <p className="text-sm font-medium mt-1 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full inline-block">
+                    {submission.summary_feedback.performance_category}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Summary</h4>
+                  <p className="text-sm">{submission.summary_feedback.summary}</p>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">AI Feedback</h4>
+                  <p className="text-sm whitespace-pre-line">{submission.summary_feedback.feedback}</p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No summary feedback available for this submission.</p>
+              </div>
+            )}
           </div>
         )}
         
@@ -189,7 +261,11 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
             </div>
             
             {!isEditingFeedback ? (
-              <p className="text-sm">{feedback}</p>
+              feedback ? (
+                <p className="text-sm whitespace-pre-line">{feedback}</p>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No feedback provided yet.</p>
+              )
             ) : (
               <textarea
                 value={feedback}
@@ -209,7 +285,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
             <div key={key}>
               <div className="flex justify-between mb-1">
                 <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
-                <span className="text-xs font-medium text-gray-700">{value}/100</span>
+                <span className="text-xs font-medium text-gray-700">{Math.round(value)}/100</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
@@ -223,7 +299,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
           <div>
             <div className="flex justify-between mb-1">
               <span className="text-xs font-medium text-gray-700">Overall</span>
-              <span className="text-xs font-medium text-gray-700">{submission.overallScore}/100</span>
+              <span className="text-xs font-medium text-gray-700">{Math.round(submission.overallScore)}/100</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
