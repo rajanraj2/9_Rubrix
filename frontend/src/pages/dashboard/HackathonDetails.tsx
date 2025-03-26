@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -11,8 +12,10 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Plus } from 'lucide-react';
+import { Plus, Copy, Check } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
+import { hackathonAPI } from '../../lib/api';
+import { Hackathon } from '../../components/dashboard/HackathonCard';
 
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'];
 
@@ -39,9 +42,42 @@ const SAMPLE_DATA = {
 };
 
 const HackathonDetails = () => {
+  const { hackathonId } = useParams<{ hackathonId: string }>();
   const [selectedView, setSelectedView] = useState('overall');
   const [parameters, setParameters] = useState(SAMPLE_DATA.parameters);
   const [newParameter, setNewParameter] = useState('');
+  const [hackathon, setHackathon] = useState<Hackathon | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  useEffect(() => {
+    const fetchHackathonDetails = async () => {
+      if (!hackathonId) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await hackathonAPI.getHackathon(hackathonId);
+        setHackathon(response.data.data);
+        
+        // If there are parameters defined, use them
+        if (response.data.data.parameters && response.data.data.parameters.length > 0) {
+          setParameters(response.data.data.parameters.map((param: { name: string; weight: number; description?: string }) => ({
+            name: param.name,
+            average: param.weight,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching hackathon:', err);
+        setError('Failed to load hackathon details. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHackathonDetails();
+  }, [hackathonId]);
 
   const handleAddParameter = () => {
     if (newParameter.trim()) {
@@ -50,12 +86,73 @@ const HackathonDetails = () => {
     }
   };
 
+  const copyCodeToClipboard = () => {
+    if (hackathon?.uniqueCode) {
+      navigator.clipboard.writeText(hackathon.uniqueCode)
+        .then(() => {
+          setCodeCopied(true);
+          setTimeout(() => setCodeCopied(false), 2000);
+        })
+        .catch(err => {
+          console.error('Failed to copy: ', err);
+        });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="teacher" />
+        <main className="flex-1 p-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !hackathon) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar role="teacher" />
+        <main className="flex-1 p-6">
+          <div className="bg-red-50 text-red-600 p-4 rounded-md">
+            {error || "Hackathon not found"}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role="teacher" />
       <main className="flex-1 p-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Hackathon Insights</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{hackathon.title}</h1>
+          <p className="text-gray-600 mt-1">{hackathon.description}</p>
+          
+          {/* Unique Join Code Section */}
+          <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
+            <h3 className="text-md font-medium text-indigo-800 mb-2">
+              Hackathon Join Code
+            </h3>
+            <div className="flex items-center space-x-2">
+              <div className="bg-white px-4 py-2 rounded border border-indigo-200 font-mono text-lg">
+                {hackathon.uniqueCode}
+              </div>
+              <button
+                onClick={copyCodeToClipboard}
+                className="p-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                aria-label="Copy code"
+              >
+                {codeCopied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-sm text-indigo-600 mt-2">
+              Share this code with students to allow them to join this hackathon
+            </p>
+          </div>
+
           <div className="mt-4 flex space-x-4">
             <button
               onClick={() => setSelectedView('overall')}

@@ -1,54 +1,90 @@
-import React, { useState } from 'react';
-import { X, Edit2, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import axios from 'axios';
+import { submissionAPI } from '../../lib/api';
 
 interface SubmissionDetailProps {
-  submission: {
-    id: string;
-    studentName: string;
-    submissionTitle: string;
-    submissionDate: string;
-    overallScore: number;
-    parameters: {
-      innovation: number;
-      technical: number;
-      design: number;
-      presentation: number;
-      [key: string]: number;
-    };
-    isShortlisted: boolean;
-  };
+  submissionId: string | undefined;
+  hackathonId: string | undefined;
   onClose: () => void;
 }
 
-const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose }) => {
+// Submission Interface (From Node.js Backend)
+interface Submission {
+  id?: string;
+  studentName: string;
+  submissionTitle: string;
+  submissionDate: string;
+  overallScore: number;
+  isShortlisted: boolean;
+  files?: Array<{
+    filename: string;
+    path: string;
+    mimetype: string;
+    size: number;
+    url: string;
+  }>;
+  description?: string;
+  technologies?: string[];
+  screenshot?: string;
+  repositoryUrl?: string;
+  approach?: string;
+  challenges?: string;
+  learnings?: string;
+}
+
+// Evaluation Interface (From FastAPI Backend)
+interface Evaluation {
+  submission_id: string;
+  parameter_scores: Record<string, { id: string; score: number; description: string }>;
+  overall_score: number;
+  summary_feedback: { summary: string; feedback: string; performance_category: string };
+}
+
+const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hackathonId, onClose }) => {
   const [activeTab, setActiveTab] = useState<'preview' | 'summary' | 'feedback'>('preview');
-  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
-  const [feedback, setFeedback] = useState(
-    "This project shows great potential. The technical implementation is solid, but there's room for improvement in the UI/UX design. Consider adding more user-friendly features and improving the documentation. Overall, a commendable effort!"
-  );
+  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Sample project preview content
-  const previewContent = {
-    title: submission.submissionTitle,
-    description: "This project aims to solve problems in the healthcare sector by implementing AI-driven solutions for early disease detection. The application uses machine learning algorithms to analyze patient data and provide preliminary diagnoses.",
-    technologies: ["React", "Node.js", "TensorFlow", "MongoDB"],
-    screenshot: "https://placehold.co/600x400",
-    repositoryUrl: "https://github.com/student/project",
-  };
+  useEffect(() => {
+    const fetchSubmissionDetails = async () => {
+      if (!submissionId) return;
 
-  // Sample summary content
-  const summaryContent = {
-    approach: "The project uses a combination of supervised and unsupervised learning algorithms to analyze patient data. The frontend is built with React for a responsive and accessible interface.",
-    challenges: "Major challenges included data preprocessing, model training optimization, and ensuring HIPAA compliance for data privacy.",
-    learnings: "The team learned valuable lessons about healthcare data management, machine learning model deployment, and creating user-friendly interfaces for medical professionals.",
-  };
+      try {
+        const response = await submissionAPI.getSubmission(submissionId);
+        if (response.data.success) {
+          setSubmission(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching submission details:", error);
+      }
+    };
 
-  const handleSaveFeedback = () => {
-    setIsEditingFeedback(false);
-    // Here you would typically save the feedback to your backend
-  };
+    const fetchEvaluationDetails = async () => {
+      if (!hackathonId || !submissionId) return;
 
-  // Function to render score bars with colored backgrounds based on score
+      try {
+        const response = await axios.get(`http://localhost:8000/hackathon/${hackathonId}/evaluations`);
+        const evaluations = response.data.submissions;
+
+        // Find the evaluation result for the selected submission
+        const submissionEvaluation = evaluations.find((evalResult: Evaluation) => evalResult.submission_id === submissionId);
+        setEvaluation(submissionEvaluation || null);
+      } catch (error) {
+        console.error("Error fetching evaluation results:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubmissionDetails();
+    fetchEvaluationDetails();
+  }, [submissionId, hackathonId]);
+
+  if (isLoading) return <div className="p-6 text-gray-600">Loading submission details...</div>;
+  if (!submission) return <div className="p-6 text-gray-600">No submission found.</div>;
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'bg-green-500';
     if (score >= 60) return 'bg-yellow-500';
@@ -58,184 +94,108 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submission, onClose
 
   return (
     <div className="h-full flex flex-col">
+      {/* Header */}
       <div className="flex justify-between items-center p-4 border-b">
         <h3 className="text-lg font-medium text-gray-900">Submission Details</h3>
-        <button 
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-        >
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
           <X className="w-5 h-5" />
         </button>
       </div>
-      
+
+      {/* Tabs */}
       <div className="flex border-b">
-        <button
-          onClick={() => setActiveTab('preview')}
-          className={`flex-1 py-2 text-center ${
-            activeTab === 'preview'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Preview
-        </button>
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`flex-1 py-2 text-center ${
-            activeTab === 'summary'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Summary
-        </button>
-        <button
-          onClick={() => setActiveTab('feedback')}
-          className={`flex-1 py-2 text-center ${
-            activeTab === 'feedback'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Feedback
-        </button>
+        {['preview', 'summary', 'feedback'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as 'preview' | 'summary' | 'feedback')}
+            className={`flex-1 py-2 text-center ${
+              activeTab === tab ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
       </div>
-      
+
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
+        {/* Preview Tab */}
         {activeTab === 'preview' && (
           <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
-              <p className="text-base font-medium">{previewContent.title}</p>
+            <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
+            <p className="text-base font-medium">{submission.submissionTitle}</p>
+
+            <h4 className="text-sm font-medium text-gray-500">Description</h4>
+            <p className="text-sm">{submission.description || 'No description available.'}</p>
+
+            <h4 className="text-sm font-medium text-gray-500">Technologies Used</h4>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {submission.technologies?.map((tech, index) => (
+                <span key={index} className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-md">{tech}</span>
+              ))}
             </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Description</h4>
-              <p className="text-sm">{previewContent.description}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Technologies Used</h4>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {previewContent.technologies.map((tech) => (
-                  <span key={tech} className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-md">
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Project Screenshot</h4>
-              <img 
-                src={previewContent.screenshot} 
-                alt="Project Screenshot" 
-                className="mt-1 rounded-md w-full object-cover h-48"
-              />
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Repository</h4>
-              <a 
-                href={previewContent.repositoryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-indigo-600 hover:underline"
-              >
-                {previewContent.repositoryUrl}
-              </a>
-            </div>
+
+            <h4 className="text-sm font-medium text-gray-500">Repository</h4>
+            <a href={submission.repositoryUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
+              {submission.repositoryUrl || 'No repository link provided'}
+            </a>
           </div>
         )}
-        
+
+        {/* Summary Tab */}
         {activeTab === 'summary' && (
           <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Approach</h4>
-              <p className="text-sm">{summaryContent.approach}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Challenges Faced</h4>
-              <p className="text-sm">{summaryContent.challenges}</p>
-            </div>
-            
-            <div>
-              <h4 className="text-sm font-medium text-gray-500">Learnings</h4>
-              <p className="text-sm">{summaryContent.learnings}</p>
-            </div>
+            <h4 className="text-sm font-medium text-gray-500">Approach</h4>
+            <p className="text-sm">{submission.approach || 'Approach details not available.'}</p>
+
+            <h4 className="text-sm font-medium text-gray-500">Challenges Faced</h4>
+            <p className="text-sm">{submission.challenges || 'Challenges not provided.'}</p>
+
+            <h4 className="text-sm font-medium text-gray-500">Learnings</h4>
+            <p className="text-sm">{submission.learnings || 'No learnings shared.'}</p>
           </div>
         )}
-        
-        {activeTab === 'feedback' && (
+
+        {/* Feedback Tab */}
+        {activeTab === 'feedback' && evaluation && (
           <div className="space-y-4">
-            <div className="flex justify-between items-start">
-              <h4 className="text-sm font-medium text-gray-500">Teacher's Feedback</h4>
-              {!isEditingFeedback ? (
-                <button
-                  onClick={() => setIsEditingFeedback(true)}
-                  className="text-indigo-600 hover:text-indigo-800"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSaveFeedback}
-                  className="text-green-600 hover:text-green-800"
-                >
-                  <Save className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            
-            {!isEditingFeedback ? (
-              <p className="text-sm">{feedback}</p>
-            ) : (
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                className="w-full h-32 p-2 border rounded-md text-sm"
-                placeholder="Provide feedback..."
-              />
-            )}
+            <h4 className="text-sm font-medium text-gray-500">Teacher's Feedback</h4>
+            <p className="text-sm">{evaluation.summary_feedback.feedback || "No feedback available."}</p>
           </div>
         )}
       </div>
-      
-      <div className="border-t p-4">
-        <h4 className="text-sm font-medium text-gray-500 mb-3">Scoring Parameters</h4>
-        <div className="space-y-3">
-          {Object.entries(submission.parameters).map(([key, value]) => (
-            <div key={key}>
+
+      {/* Scoring Parameters */}
+      {evaluation && (
+        <div className="border-t p-4">
+          <h4 className="text-sm font-medium text-gray-500 mb-3">Scoring Parameters</h4>
+          <div className="space-y-3">
+            {Object.entries(evaluation.parameter_scores).map(([key, value]) => (
+              <div key={value.id}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
+                  <span className="text-xs font-medium text-gray-700">{value.score}/100</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className={`${getScoreColor(value.score)} h-2 rounded-full`} style={{ width: `${value.score}%` }}></div>
+                </div>
+              </div>
+            ))}
+            {/* Overall Score */}
+            <div>
               <div className="flex justify-between mb-1">
-                <span className="text-xs font-medium text-gray-700 capitalize">{key}</span>
-                <span className="text-xs font-medium text-gray-700">{value}/100</span>
+                <span className="text-xs font-medium text-gray-700">Overall</span>
+                <span className="text-xs font-medium text-gray-700">{evaluation.overall_score}/100</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`${getScoreColor(value)} h-2 rounded-full`}
-                  style={{ width: `${value}%` }}
-                ></div>
+                <div className={`${getScoreColor(evaluation.overall_score)} h-2 rounded-full`} style={{ width: `${evaluation.overall_score}%` }}></div>
               </div>
-            </div>
-          ))}
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-xs font-medium text-gray-700">Overall</span>
-              <span className="text-xs font-medium text-gray-700">{submission.overallScore}/100</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`${getScoreColor(submission.overallScore)} h-2 rounded-full`}
-                style={{ width: `${submission.overallScore}%` }}
-              ></div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default SubmissionDetail; 
+export default SubmissionDetail;

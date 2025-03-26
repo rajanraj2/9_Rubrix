@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import { useAuth } from '../../lib/authContext';
 
 const loginSchema = z.object({
-  phoneNumber: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
+  email: z.string().email('Invalid email address'),
+  
   pin: z.string().regex(/^\d{4}$/, 'PIN must be 4 digits'),
   role: z.enum(['student', 'teacher'], { required_error: 'Please select a role' }),
 });
@@ -15,7 +17,10 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const navigate = useNavigate();
+  const { login, error: authError } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -24,23 +29,39 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    console.log(data);
-    navigate(`/dashboard/${data.role}`);
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await login(data.email, data.role,  data.pin,);
+      // Navigation is handled in the auth context
+    } catch (err: any) {
+      setError(err.response?.data?.message || authError || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Login</h2>
+      
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
+           Email
           </label>
           <Input
-            {...register('phoneNumber')}
-            error={errors.phoneNumber?.message}
-            placeholder="Enter 10-digit phone number"
+            {...register('email')}
+            error={errors.email?.message}
+            placeholder="Enter your email id"
             type="tel"
           />
         </div>
@@ -74,9 +95,10 @@ const Login = () => {
 
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
+          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          disabled={isLoading}
         >
-          Login
+          {isLoading ? 'Logging in...' : 'Login'}
         </button>
 
         <div className="text-center mt-4">

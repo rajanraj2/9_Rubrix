@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Filter, Star, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
 import SubmissionDetail from '../../components/dashboard/SubmissionDetail';
+import { hackathonAPI, submissionAPI } from '../../lib/api';
+import { set } from 'react-hook-form';
 
 interface SubmissionParams {
   innovation: number;
@@ -13,33 +15,32 @@ interface SubmissionParams {
 }
 
 interface Submission {
-  id: string;
-  studentName: string;
-  submissionTitle: string;
-  submissionDate: string;
-  overallScore: number;
-  parameters: SubmissionParams;
+ 
+  id?: string;  // MongoDB sometimes uses _id
+  _id?: string; // Include both id and _id for safety
+  userId: {
+    _id: string;
+    fullName: string;
+    state?: string;
+    district?: string;
+    grade?: string;
+  };
+  hackathonId: string;
+  submissionText: string;
+  submittedAt: string;
+  totalScore: number;
+  parameters?: Record<string, number>; // This depends on evaluation data
   isShortlisted: boolean;
+  files?: Array<{
+    filename: string;
+    path: string;
+    mimetype: string;
+    size: number;
+    url: string;
+  }>;
 }
 
-// Sample data for demonstration purposes
-const SAMPLE_SUBMISSIONS: Submission[] = Array.from({ length: 100 }, (_, i) => ({
-  id: `submission-${i + 1}`,
-  studentName: `Student ${i + 1}`,
-  submissionTitle: `Project ${i + 1}`,
-  submissionDate: new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000).toISOString(),
-  overallScore: Math.floor(Math.random() * 100),
-  parameters: {
-    innovation: Math.floor(Math.random() * 100),
-    technical: Math.floor(Math.random() * 100),
-    design: Math.floor(Math.random() * 100),
-    presentation: Math.floor(Math.random() * 100),
-  },
-  isShortlisted: Math.random() > 0.8, // 20% are shortlisted randomly
-}));
 
-// Sort submissions by overall score descending
-SAMPLE_SUBMISSIONS.sort((a, b) => b.overallScore - a.overallScore);
 
 const ITEMS_PER_PAGE = 10;
 
@@ -49,14 +50,79 @@ const LeaderboardPage: React.FC = () => {
   
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [submissions, setSubmissions] = useState(SAMPLE_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [displayedSubmissions, setDisplayedSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'overallScore', direction: 'descending' });
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string >();
+  const [sortConfig, setSortConfig] = useState({ key: 'totalScore', direction: 'descending' });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterParam, setFilterParam] = useState<string | null>(null);
   const [filterMin, setFilterMin] = useState(0);
   const [filterMax, setFilterMax] = useState(100);
+  const [evaluationParams, setEvaluationParams] = useState<string[]>([]);
+  const [demographicFilter, setDemographicFilter] = useState<{
+    state: string;
+    district: string;
+    grade: string;
+    gender: string;
+    school: string;
+  }>({
+    state: '',
+    district: '',
+    grade: '',
+    gender: '',
+    school: ''
+  });
+  
+
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      if (!hackathonId) return;
+      setIsLoading(true);
+      try {
+        const response = await hackathonAPI.getLeaderboard(hackathonId);
+        if (response.data.success) {
+          const fetchedSubmissions: Submission[] = response.data.data;
+          const hackathon = await hackathonAPI.getHackathon(hackathonId);
+          console.log("Fetched leaderboard data:", fetchedSubmissions);
+          const parameters = hackathon.data.data.parameters.map((param: any) => param.name);
+          setEvaluationParams(parameters);
+          
+          fetchedSubmissions.sort((a, b) => b.totalScore - a.totalScore);
+          setSubmissions(fetchedSubmissions);
+          setDisplayedSubmissions(fetchedSubmissions.slice(0, ITEMS_PER_PAGE));
+        }
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+      }
+      setIsLoading(false);
+    };
+    
+    fetchLeaderboard();
+  }, [hackathonId]);
+
+  // const selectedSubmission = submissions.find(s => s.id === selectedSubmission);
+
+  
+
+  const handleSelectSubmission = (submissionId?: string) => {
+    setSelectedSubmissionId(submissionId);
+    setSelectedSubmission(hackathonId ?? null); // ✅ Ensure it never gets undefined
+  };
+
+  // Toggle shortlist
+  const toggleShortlist = async (submissionId: string) => {
+    setSubmissions(prevSubmissions =>
+      prevSubmissions.map(submission =>
+        submission.id === submissionId
+          ? { ...submission, isShortlisted: !submission.isShortlisted }
+          : submission
+          
+      )
+    );
+    
+  };
 
   // Load more submissions when scrolling or changing page
   useEffect(() => {
@@ -66,6 +132,7 @@ const LeaderboardPage: React.FC = () => {
       const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
       const endIndex = startIndex + ITEMS_PER_PAGE;
       setDisplayedSubmissions(submissions.slice(0, endIndex));
+      console.log(`Displaying submissions:`, displayedSubmissions);
       setIsLoading(false);
     }, 500);
 
@@ -84,28 +151,29 @@ const LeaderboardPage: React.FC = () => {
       if (key.includes('.')) {
         const [parentKey, childKey] = key.split('.');
         if (parentKey === 'parameters' && childKey) {
-          const aValue = a.parameters[childKey];
-          const bValue = b.parameters[childKey];
+          const aValue = a.parameters?.[childKey] ?? 0; // Default to 0 if undefined
+          const bValue = b.parameters?.[childKey] ?? 0; // Default to 0 if undefined
           return direction === 'ascending' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
         }
+        
         return 0;
       }
 
       // Handle non-nested keys
-      if (key === 'overallScore') {
+      if (key === 'totalScore') {
         return direction === 'ascending' 
-          ? a.overallScore - b.overallScore 
-          : b.overallScore - a.overallScore;
-      } else if (key === 'submissionDate') {
-        const aDate = new Date(a.submissionDate).getTime();
-        const bDate = new Date(b.submissionDate).getTime();
+          ? a.totalScore - b.totalScore 
+          : b.totalScore - a.totalScore;
+      } else if (key === 'submittedAt') {
+        const aDate = new Date(a.submittedAt).getTime();
+        const bDate = new Date(b.submittedAt).getTime();
         return direction === 'ascending' 
           ? aDate - bDate 
           : bDate - aDate;
-      } else if (key === 'submissionTitle') {
+      } else if (key === 'submissionText') {
         return direction === 'ascending'
-          ? a.submissionTitle.localeCompare(b.submissionTitle)
-          : b.submissionTitle.localeCompare(a.submissionTitle);
+          ? a.submittedAt.localeCompare(b.submittedAt)
+          : b.submittedAt.localeCompare(a.submittedAt);
       }
       
       return 0;
@@ -120,16 +188,17 @@ const LeaderboardPage: React.FC = () => {
   const applyFilter = () => {
     if (!filterParam) return;
 
-    const filtered = SAMPLE_SUBMISSIONS.filter(submission => {
-      if (filterParam === 'overallScore') {
-        return submission.overallScore >= filterMin && submission.overallScore <= filterMax;
+    const filtered = submissions.filter(submission => {
+      if (filterParam === 'totalScore') {
+        return submission.totalScore >= filterMin && submission.totalScore <= filterMax;
       }
       
       if (filterParam.includes('.')) {
         const [parent, child] = filterParam.split('.');
-        if (parent === 'parameters' && child && child in submission.parameters) {
+        if (parent === 'parameters' && child && submission.parameters?.[child] !== undefined) {
           return submission.parameters[child] >= filterMin && submission.parameters[child] <= filterMax;
         }
+        
       }
       
       return true;
@@ -140,26 +209,19 @@ const LeaderboardPage: React.FC = () => {
     setIsFilterOpen(false);
   };
 
+  
+
   // Reset filters
   const resetFilters = () => {
-    setSubmissions(SAMPLE_SUBMISSIONS);
+    setSubmissions(submissions);
     setFilterParam(null);
     setFilterMin(0);
     setFilterMax(100);
     setCurrentPage(1);
     setIsFilterOpen(false);
   };
-
-  // Toggle shortlist
-  const toggleShortlist = (submissionId: string) => {
-    const updatedSubmissions = submissions.map(submission => {
-      if (submission.id === submissionId) {
-        return { ...submission, isShortlisted: !submission.isShortlisted };
-      }
-      return submission;
-    });
-    setSubmissions(updatedSubmissions);
-  };
+  
+  
 
   // Load more submissions
   const loadMore = () => {
@@ -167,6 +229,8 @@ const LeaderboardPage: React.FC = () => {
       setCurrentPage(prev => prev + 1);
     }
   };
+
+
 
   // Sort indicator
   const getSortIndicator = (key: string) => {
@@ -210,11 +274,12 @@ const LeaderboardPage: React.FC = () => {
                             className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
                           >
                             <option value="">Select parameter</option>
-                            <option value="overallScore">Overall Score</option>
-                            <option value="parameters.innovation">Innovation</option>
-                            <option value="parameters.technical">Technical</option>
-                            <option value="parameters.design">Design</option>
-                            <option value="parameters.presentation">Presentation</option>
+                            <option value="totalScore">Overall Score</option>
+                            {evaluationParams.map((param) => (
+                              <option key={param} value={`parameters.${param}`}>
+                                {param.charAt(0).toUpperCase() + param.slice(1)}
+                              </option>
+                            ))}
                           </select>
                         </div>
                         
@@ -277,31 +342,31 @@ const LeaderboardPage: React.FC = () => {
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('submissionTitle')}
+                        onClick={() => handleSort('submissionText')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Submission</span>
-                          {getSortIndicator('submissionTitle')}
+                          {getSortIndicator('submissionText')}
                         </div>
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('submissionDate')}
+                        onClick={() => handleSort('submittedAt')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Date</span>
-                          {getSortIndicator('submissionDate')}
+                          {getSortIndicator('submittedAt')}
                         </div>
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('overallScore')}
+                        onClick={() => handleSort('totalScore')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Score</span>
-                          {getSortIndicator('overallScore')}
+                          {getSortIndicator('totalScore')}
                         </div>
                       </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -316,26 +381,30 @@ const LeaderboardPage: React.FC = () => {
                           {index + 1}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {submission.studentName}
+                        {submission.userId?.fullName || "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {submission.submissionTitle}
+                          {submission.submissionText}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(submission.submissionDate).toLocaleDateString()}
+                          {new Date(submission.submittedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {submission.overallScore}
+                          {submission.totalScore}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                           <button
-                            onClick={() => toggleShortlist(submission.id)}
+                            onClick={() => submission?.id && toggleShortlist(submission.id)}
+
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             <Star className={`w-5 h-5 ${submission.isShortlisted ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                           </button>
                           <button
-                            onClick={() => setSelectedSubmission(selectedSubmission === submission.id ? null : submission.id)}
+                            // onClick={() => setSelectedSubmission(submission)}
+                            onClick = {() => handleSelectSubmission(submission.id)}
+
+                            // onClick={() => setSelectedSubmission(submission?.id && selectedSubmission === submission.id ? null : submission.id )}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             <ChevronRight className="w-5 h-5" />
@@ -361,14 +430,17 @@ const LeaderboardPage: React.FC = () => {
             </div>
           </div>
           
+
           {selectedSubmission && (
-            <div className="lg:w-1/4 bg-white rounded-lg shadow">
-              <SubmissionDetail
-                submission={submissions.find(s => s.id === selectedSubmission)!}
-                onClose={() => setSelectedSubmission(null)}
-              />
-            </div>
+            <SubmissionDetail
+              submissionId={selectedSubmissionId } // Ensure correct ID is passed
+              hackathonId={hackathonId} // Pass the hackathon ID for evaluation fetching
+              onClose={() => setSelectedSubmission(null)}
+            />
           )}
+
+
+
         </div>
       </main>
     </div>
