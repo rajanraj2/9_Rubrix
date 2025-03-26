@@ -15,7 +15,7 @@ export interface Student extends UserBase {
 
 export interface Teacher extends UserBase {
   role: 'teacher';
-  schoolName: string;
+  schoolCollegeName: string;
   collegeNumber: string;
 }
 

@@ -40,7 +40,7 @@ interface SubmissionData {
     district?: string;
     grade?: string;
     gender?: string;
-    schoolName?: string;
+    schoolCollegeName?: string;
   };
   files?: SubmissionFile[];
   evaluation?: EvaluationParameter[];
@@ -215,10 +215,10 @@ const SubmissionViewPage: React.FC = () => {
                             <p className="text-gray-500">Name</p>
                             <p className="font-medium">{submission.userId.fullName}</p>
                           </div>
-                          {submission.userId.schoolName && (
+                          {submission.userId.schoolCollegeName && (
                             <div>
                               <p className="text-gray-500">School</p>
-                              <p className="font-medium">{submission.userId.schoolName}</p>
+                              <p className="font-medium">{submission.userId.schoolCollegeName}</p>
                             </div>
                           )}
                           {submission.userId.grade && (

@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, NavLink } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-
-import { Eye, EyeOff } from 'lucide-react';
 import Input from '../../components/ui/Input';
-import Select from 'react-select';
-
+import Select from '../../components/ui/Select';
 import { useAuth } from '../../lib/authContext';
+import { NavLink } from 'react-router-dom';
 
 const studentSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -29,8 +25,7 @@ const StudentRegistration = () => {
   const { registerStudent, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPin, setShowPin] = useState(false); // Toggle state for PIN visibility
-
+  
   const {
     register,
     handleSubmit,
@@ -45,80 +40,19 @@ const StudentRegistration = () => {
       setError(null);
       
       await registerStudent(data);
-
+      // Navigation is handled in the auth context
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : authError || 'Registration failed. Please try again.';
-
+      const errorMessage = err instanceof Error ? err.message : 
+                          authError || 'Registration failed. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
-  const genderOptions = [
-    { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' },
-
-  ];
-  const gradeOptions = [
-    { value: '1', label: '1st Grade' },
-    { value: '2', label: '2nd Grade' },
-    { value: '3', label: '3rd Grade' },
-    { value: '4', label: '4th Grade' },
-    { value: '5', label: '5th Grade' },
-    { value: '6', label: '6th Grade' },
-    { value: '7', label: '7th Grade' },
-    { value: '8', label: '8th Grade' },
-    { value: '9', label: '9th Grade' },
-    { value: '10', label: '10th Grade' },
-    { value: '11', label: '11th Grade' },
-    { value: '12', label: '12th Grade' },
-    {value: 'UG', label: 'Undergraduate'},
-    {value: 'PG', label: 'Postgraduate'},
-  ];
-
-const stateOptions = [
-  { value: "Andhra Pradesh", label: "Andhra Pradesh" },
-  { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
-  { value: "Assam", label: "Assam" },
-  { value: "Bihar", label: "Bihar" },
-  { value: "Chhattisgarh", label: "Chhattisgarh" },
-  { value: "Goa", label: "Goa" },
-  { value: "Gujarat", label: "Gujarat" },
-  { value: "Haryana", label: "Haryana" },
-  { value: "Himachal Pradesh", label: "Himachal Pradesh" },
-  { value: "Jharkhand", label: "Jharkhand" },
-  { value: "Karnataka", label: "Karnataka" },
-  { value: "Kerala", label: "Kerala" },
-  { value: "Madhya Pradesh", label: "Madhya Pradesh" },
-  { value: "Maharashtra", label: "Maharashtra" },
-  { value: "Manipur", label: "Manipur" },
-  { value: "Meghalaya", label: "Meghalaya" },
-  { value: "Mizoram", label: "Mizoram" },
-  { value: "Nagaland", label: "Nagaland" },
-  { value: "Odisha", label: "Odisha" },
-  { value: "Punjab", label: "Punjab" },
-  { value: "Rajasthan", label: "Rajasthan" },
-  { value: "Sikkim", label: "Sikkim" },
-  { value: "Tamil Nadu", label: "Tamil Nadu" },
-  { value: "Telangana", label: "Telangana" },
-  { value: "Tripura", label: "Tripura" },
-  { value: "Uttar Pradesh", label: "Uttar Pradesh" },
-  { value: "Uttarakhand", label: "Uttarakhand" },
-  { value: "West Bengal", label: "West Bengal" },
-];
-
-const customStyles = {
-  menuList: (base: any) => ({
-    ...base,
-    maxHeight: "120px", // ✅ Limits dropdown height
-    overflowY: "auto", // ✅ Enables scroll
-  }),
-};
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-4  text-center">Student Registration</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Student Registration</h2>
       
       {error && (
         <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
@@ -131,24 +65,35 @@ const customStyles = {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Full Name
           </label>
-          <Input {...register('fullName')} error={errors.fullName?.message} placeholder="Enter your full name" />
+          <Input
+            {...register('fullName')}
+            error={errors.fullName?.message}
+            placeholder="Enter your full name"
+          />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email
           </label>
-          <Input {...register('email')} error={errors.email?.message} placeholder="Enter your email id" type="email" />
+          <Input
+            {...register('email')}
+            error={errors.phoneNumber?.message}
+            placeholder="Enter 10-digit phone number"
+            type="email"
+          />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number
           </label>
-          <Input {...register('phoneNumber')} error={errors.phoneNumber?.message} placeholder="Enter 10-digit phone number" type="tel" />
+          <Input
+            {...register('phoneNumber')}
+            error={errors.phoneNumber?.message}
+            placeholder="Enter 10-digit phone number"
+            type="tel"
+          />
         </div>
-
-        
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -166,19 +111,29 @@ const customStyles = {
             State
           </label>
           <Select
-            options={stateOptions}
-            isSearchable={true} // ✅ Allows search
-            styles={customStyles}
-            placeholder="Select a state..."
+            {...register('state')}
+            error={errors.state?.message}
+            options={[
+              { value: 'AP', label: 'Andhra Pradesh' },
+              { value: 'KA', label: 'Karnataka' },
+              { value: 'MH', label: 'Maharashtra' },
+              { value: 'UP', label: 'Uttar Pradesh' },
+              { value: 'WB', label: 'West Bengal' },
+              { value: 'TN', label: 'Tamil Nadu' },
+              { value: 'MP', label: 'Madhya Pradesh' },
+            ]}
           />
-
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             District
           </label>
-          <Input {...register('district')} error={errors.district?.message} placeholder="Enter your district" />
+          <Input
+            {...register('district')}
+            error={errors.district?.message}
+            placeholder="Enter your district"
+          />
         </div>
 
         <div>
@@ -186,10 +141,22 @@ const customStyles = {
             Grade
           </label>
           <Select
-            options={gradeOptions}
-            isSearchable={true} // ✅ Allows search
-            styles={customStyles}
-            placeholder="Please select your grade..."
+            {...register('grade')}
+            error={errors.grade?.message}
+            options={[
+              { value: '1', label: '1st Grade' },
+              { value: '2', label: '2nd Grade' },
+              { value: '3', label: '3rd Grade' },
+              { value: '4', label: '4th Grade' },
+              { value: '5', label: '5th Grade' },
+              { value: '6', label: '6th Grade' },
+              { value: '7', label: '7th Grade' },
+              { value: '8', label: '8th Grade' },
+              { value: '9', label: '9th Grade' },
+              { value: '10', label: '10th Grade' },
+              { value: '11', label: '11th Grade' },
+              { value: '12', label: '12th Grade' },
+            ]}
           />
         </div>
 
@@ -198,56 +165,38 @@ const customStyles = {
             Gender
           </label>
           <Select
-            options={genderOptions}
-            isSearchable={true} // ✅ Allows search
-            styles={customStyles}
-            placeholder="Please select your gender..."
+            {...register('gender')}
+            error={errors.gender?.message}
+            options={[
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' },
+            ]}
           />
         </div>
 
-        
-        {/* PIN Input with Show/Hide Password Icon */}
-        <div className="relative">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             4-Digit PIN
           </label>
-          <div className="relative">
-            <Input
-              {...register('pin')}
-              error={errors.pin?.message}
-              type={showPin ? "text" : "password"}
-              placeholder="Enter 4-digit PIN"
-              maxLength={4}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPin(!showPin)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-            >
-              {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
+          <Input
+            {...register('pin')}
+            error={errors.pin?.message}
+            type="password"
+            placeholder="Enter 4-digit PIN"
+            maxLength={4}
+          />
         </div>
 
         <button
           type="submit"
-
-          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors ${
-            isLoading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
+          className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           disabled={isLoading}
         >
           {isLoading ? 'Registering...' : 'Register'}
         </button>
 
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/" className="underline text-indigo-600 hover:text-indigo-700">
-              Login here
-            </Link>
-          </p>
-        </div>
+        <p className="text-gray-600 text-center">Already have an account? <NavLink to="/login" target="_self" rel="noreferrer" className="underline hover:text-gray-800">Login here</NavLink></p>
       </form>
     </div>
   );

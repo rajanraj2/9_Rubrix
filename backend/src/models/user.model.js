@@ -35,34 +35,34 @@ const userSchema = new mongoose.Schema({
   // Student specific fields
   schoolCollegeName: {
     type: String,
-    required: function() { return this.role === 'student'; },
+    // required: true,
     trim: true,
   },
   state: {
     type: String,
-    required: function() { return this.role === 'student'; },
+    // required: function() { return this.role === 'student'; },
   },
   district: {
     type: String,
-    required: function() { return this.role === 'student'; },
+    // required: function() { return this.role === 'student'; },
   },
   grade: {
     type: String,
-    required: function() { return this.role === 'student'; },
+    // required: function() { return this.role === 'student'; },
   },
   gender: {
     type: String,
     enum: ['male', 'female', 'other'],
-    required: [true, 'Please specify your gender'],
+    // required: [true, 'Please specify your gender'],
   },
   // Teacher specific fields
-  schoolName: {
+  schoolCollegeName: {
     type: String,
-    required: function() { return this.role === 'teacher'; },
+    // required: function() { return this.role === 'teacher'; },
   },
   collegeNumber: {
     type: String,
-    required: function() { return this.role === 'teacher'; },
+    // required: function() { return this.role === 'teacher'; },
   },
   // Auth
   pin: {

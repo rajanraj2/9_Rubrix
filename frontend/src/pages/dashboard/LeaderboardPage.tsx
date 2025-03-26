@@ -39,7 +39,7 @@ interface SubmissionResponse {
     district?: string;
     grade?: string;
     gender?: string;
-    schoolName?: string;
+    schoolCollegeName?: string;
   };
   hackathonId: string;
   submissionText?: string;
@@ -55,14 +55,14 @@ interface SubmissionResponse {
     score: number;
     feedback?: string;
   }>;
-  totalScore: number;
+  overallScore: number;
   feedback?: string;
   summary_feedback?: {
     summary: string;
     feedback: string;
     performance_category: string;
   };
-  submittedAt: string;
+  submissi: string;
   evaluatedAt?: string;
 }
 
@@ -83,7 +83,7 @@ interface Submission {
     district?: string;
     grade?: string;
     gender?: string;
-    schoolName?: string;
+    schoolCollegeName?: string;
   };
   submissionText?: string;
 
@@ -111,8 +111,8 @@ interface LeaderboardItem {
   submission: {
     _id: string;
     submissionText: string;
-    submittedAt: string;
-    totalScore: number;
+    submissi: string;
+    overallScore: number;
     isShortlisted: boolean;
     evaluation: Array<{
       parameterId: string;
@@ -142,7 +142,7 @@ interface LeaderboardItem {
       district?: string;
       grade?: string;
       gender?: string;
-      schoolName?: string;
+      schoolCollegeName?: string;
     };
   };
 }
@@ -164,7 +164,7 @@ const LeaderboardPage: React.FC = () => {
   const [displayedSubmissions, setDisplayedSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string >();
-  const [sortConfig, setSortConfig] = useState({ key: 'totalScore', direction: 'descending' });
+  const [sortConfig, setSortConfig] = useState({ key: 'overallScore', direction: 'descending' });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDemographicFilterOpen, setIsDemographicFilterOpen] = useState(false);
   const [filterParam, setFilterParam] = useState<string | null>(null);
@@ -205,8 +205,9 @@ const LeaderboardPage: React.FC = () => {
           const parameters = hackathon.data.data.parameters.map((param: any) => param.name);
           setEvaluationParams(parameters);
           
-          fetchedSubmissions.sort((a, b) => b.totalScore - a.totalScore);
+          fetchedSubmissions.sort((a, b) => b.overallScore - a.overallScore);
           setSubmissions(fetchedSubmissions);
+          setOriginalSubmissions(fetchedSubmissions);
           setDisplayedSubmissions(fetchedSubmissions.slice(0, ITEMS_PER_PAGE));
         }
       } catch (error) {
@@ -229,15 +230,24 @@ const LeaderboardPage: React.FC = () => {
 
   // Toggle shortlist
   const toggleShortlist = async (submissionId: string) => {
-    setSubmissions(prevSubmissions =>
-      prevSubmissions.map(submission =>
-        submission.id === submissionId
-          ? { ...submission, isShortlisted: !submission.isShortlisted }
-          : submission
-          
-      )
-    );
-    
+    try {
+      await submissionAPI.toggleShortlist(submissionId);
+      
+      // Update local state
+      const updatedSubmissions = submissions.map(submission => {
+        if (submission.id === submissionId) {
+          return { ...submission, isShortlisted: !submission.isShortlisted };
+        }
+        return submission;
+      });
+      
+      setSubmissions(updatedSubmissions);
+      setOriginalSubmissions(prev => 
+        prev.map(sub => sub.id === submissionId ? { ...sub, isShortlisted: !sub.isShortlisted } : sub)
+      );
+    } catch (error) {
+      console.error('Error toggling shortlist:', error);
+    }
   };
 
 
@@ -297,9 +307,9 @@ const LeaderboardPage: React.FC = () => {
           : bValue.localeCompare(aValue);
       }
       
-      if (key === 'userId.schoolName') {
-        const aValue = a.userId?.schoolName || '';
-        const bValue = b.userId?.schoolName || '';
+      if (key === 'userId.schoolCollegeName') {
+        const aValue = a.userId?.schoolCollegeName || '';
+        const bValue = b.userId?.schoolCollegeName || '';
         return direction === 'ascending' 
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
@@ -322,21 +332,21 @@ const LeaderboardPage: React.FC = () => {
       }
 
       // Handle non-nested keys
-      if (key === 'totalScore') {
+      if (key === 'overallScore') {
         return direction === 'ascending' 
-          ? a.totalScore - b.totalScore 
-          : b.totalScore - a.totalScore;
-      } else if (key === 'submittedAt') {
-        const aDate = new Date(a.submittedAt).getTime();
-        const bDate = new Date(b.submittedAt).getTime();
+          ? a.overallScore - b.overallScore 
+          : b.overallScore - a.overallScore;
+      } else if (key === 'submissionDate') {
+        const aDate = new Date(a.submissionDate).getTime();
+        const bDate = new Date(b.submissionDate).getTime();
         return direction === 'ascending' 
           ? aDate - bDate 
           : bDate - aDate;
       } else if (key === 'submissionText') {
         return direction === 'ascending'
 
-          ? a.submittedAt.localeCompare(b.submittedAt)
-          : b.submittedAt.localeCompare(a.submittedAt);
+          ? a.submissionDate.localeCompare(b.submissionDate)
+          : b.submissionDate.localeCompare(a.submissionDate);
 
       }
       
@@ -354,8 +364,8 @@ const LeaderboardPage: React.FC = () => {
 
 
     const filtered = submissions.filter(submission => {
-      if (filterParam === 'totalScore') {
-        return submission.totalScore >= filterMin && submission.totalScore <= filterMax;
+      if (filterParam === 'overallScore') {
+        return submission.overallScore >= filterMin && submission.overallScore <= filterMax;
 
       }
       
@@ -411,7 +421,7 @@ const LeaderboardPage: React.FC = () => {
     // Apply school filter
     if (demographicFilter.school) {
       filtered = filtered.filter(s => 
-        s.userId?.schoolName?.toLowerCase().includes(demographicFilter.school.toLowerCase())
+        s.userId?.schoolCollegeName?.toLowerCase().includes(demographicFilter.school.toLowerCase())
       );
     }
     
@@ -438,29 +448,6 @@ const LeaderboardPage: React.FC = () => {
     });
     setIsDemographicFilterOpen(false);
   };
-
-  // Toggle shortlist
-  const toggleShortlist = async (submissionId: string) => {
-    try {
-      await submissionAPI.toggleShortlist(submissionId);
-      
-      // Update local state
-      const updatedSubmissions = submissions.map(submission => {
-        if (submission.id === submissionId) {
-          return { ...submission, isShortlisted: !submission.isShortlisted };
-        }
-        return submission;
-      });
-      
-      setSubmissions(updatedSubmissions);
-      setOriginalSubmissions(prev => 
-        prev.map(sub => sub.id === submissionId ? { ...sub, isShortlisted: !sub.isShortlisted } : sub)
-      );
-    } catch (error) {
-      console.error('Error toggling shortlist:', error);
-    }
-  };
-
 
   // Load more submissions
   const loadMore = () => {
@@ -498,39 +485,23 @@ const LeaderboardPage: React.FC = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">Submissions</h2>
 
-                <div className="relative">
-                  <button
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className="flex items-center space-x-2 px-3 py-2 border rounded-md hover:bg-gray-50"
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span>Filter</span>
-                  </button>
-                  
-                  {isFilterOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md p-4 z-10 border">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Parameter</label>
-                          <select
-                            value={filterParam || ''}
-                            onChange={(e) => setFilterParam(e.target.value || null)}
-                            className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
-                          >
-                            <option value="">Select parameter</option>
-                            <option value="totalScore">Overall Score</option>
-                            {evaluationParams.map((param) => (
-                              <option key={param} value={`parameters.${param}`}>
-                                {param.charAt(0).toUpperCase() + param.slice(1)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div className="flex space-x-2">
-
+                <div className="flex space-x-2">
+                  {/* Demographic Filter Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsDemographicFilterOpen(!isDemographicFilterOpen)}
+                      className="flex items-center space-x-2 px-3 py-2 border rounded-md hover:bg-gray-50"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Demographic Filter</span>
+                    </button>
+                    
+                    {isDemographicFilterOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md p-4 z-10 border">
+                        {/* Demographic filter content */}
+                        <div className="space-y-3">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                            <label className="block text-sm font-medium text-gray-700">State</label>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 mr-2 text-gray-500" />
                               <input
@@ -544,7 +515,7 @@ const LeaderboardPage: React.FC = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+                            <label className="block text-sm font-medium text-gray-700">District</label>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 mr-2 text-gray-500" />
                               <input
@@ -558,7 +529,7 @@ const LeaderboardPage: React.FC = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">School</label>
+                            <label className="block text-sm font-medium text-gray-700">School</label>
                             <div className="flex items-center">
                               <School className="w-4 h-4 mr-2 text-gray-500" />
                               <input
@@ -572,7 +543,7 @@ const LeaderboardPage: React.FC = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Grade</label>
+                            <label className="block text-sm font-medium text-gray-700">Grade</label>
                             <div className="flex items-center">
                               <GraduationCap className="w-4 h-4 mr-2 text-gray-500" />
                               <select
@@ -591,7 +562,7 @@ const LeaderboardPage: React.FC = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                            <label className="block text-sm font-medium text-gray-700">Gender</label>
                             <div className="flex items-center">
                               <Users className="w-4 h-4 mr-2 text-gray-500" />
                               <select
@@ -626,6 +597,7 @@ const LeaderboardPage: React.FC = () => {
                     )}
                   </div>
                   
+                  {/* Score Filter Button */}
                   <div className="relative">
                     <button
                       onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -637,6 +609,7 @@ const LeaderboardPage: React.FC = () => {
                     
                     {isFilterOpen && (
                       <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md p-4 z-10 border">
+                        {/* Score filter content */}
                         <div className="space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700">Parameter</label>
@@ -646,10 +619,10 @@ const LeaderboardPage: React.FC = () => {
                               className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
                             >
                               <option value="">Select parameter</option>
-                              <option value="overallScore">Overall Score</option>
-                              {hackathon && hackathon.parameters && hackathon.parameters.map((param: any) => (
-                                <option key={param._id} value={`parameters.${param.name}`}>
-                                  {param.name}
+                              <option value="overallscore">Overall Score</option>
+                              {evaluationParams.map((param) => (
+                                <option key={param} value={`parameters.${param}`}>
+                                  {param.charAt(0).toUpperCase() + param.slice(1)}
                                 </option>
                               ))}
                             </select>
@@ -657,43 +630,23 @@ const LeaderboardPage: React.FC = () => {
                           
                           <div className="flex space-x-2">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700">Min</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Min</label>
                               <input
                                 type="number"
                                 value={filterMin}
                                 onChange={(e) => setFilterMin(Number(e.target.value))}
-                                min="0"
-                                max="100"
-                                className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
+                                className="block w-full border rounded-md px-3 py-2 text-sm"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700">Max</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Max</label>
                               <input
                                 type="number"
                                 value={filterMax}
                                 onChange={(e) => setFilterMax(Number(e.target.value))}
-                                min="0"
-                                max="100"
-                                className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
+                                className="block w-full border rounded-md px-3 py-2 text-sm"
                               />
                             </div>
-                          </div>
-                          
-                          <div className="flex justify-between">
-                            <button
-                              onClick={resetFilters}
-                              className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
-                            >
-                              Reset
-                            </button>
-                            <button
-                              onClick={applyFilter}
-                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                              disabled={!filterParam}
-                            >
-                              Apply
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -732,21 +685,21 @@ const LeaderboardPage: React.FC = () => {
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('submittedAt')}
+                        onClick={() => handleSort('submissi')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Date</span>
-                          {getSortIndicator('submittedAt')}
+                          {getSortIndicator('submissi')}
                         </div>
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('totalScore')}
+                        onClick={() => handleSort('overallScore')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Score</span>
-                          {getSortIndicator('totalScore')}
+                          {getSortIndicator('overallScore')}
                         </div>
                       </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -768,14 +721,14 @@ const LeaderboardPage: React.FC = () => {
                           {submission.submissionText}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(submission.submittedAt).toLocaleDateString()}
+                          {new Date(submission.submissionDate).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {submission.totalScore}
+                          {submission.overallScore}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                           <button
-                            onClick={() => submission?.id && toggleShortlist(submission.id)}
+                            onClick={() => toggleShortlist(submission.id)}
 
                             className="text-indigo-600 hover:text-indigo-900"
                           >
@@ -793,48 +746,7 @@ const LeaderboardPage: React.FC = () => {
 
                         </td>
                       </tr>
-                    ) : (
-                      displayedSubmissions.map((submission, index) => (
-                        <tr key={submission.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {index + 1}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {submission.studentName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {submission.submissionTitle}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(submission.submissionDate).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {Math.round(submission.overallScore)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                            <button
-                              onClick={() => toggleShortlist(submission.id)}
-                              className={`text-yellow-500 hover:text-yellow-700 ${submission.isShortlisted ? 'fill-yellow-400' : ''}`}
-                            >
-                              <Star className={`w-5 h-5 ${submission.isShortlisted ? 'fill-yellow-400' : ''}`} />
-                            </button>
-                            <button
-                              onClick={() => setSelectedSubmission(selectedSubmission === submission.id ? null : submission.id)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <ChevronRight className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={() => viewSubmissionDetails(submission.id)}
-                              className="text-emerald-600 hover:text-emerald-900"
-                              title="Open full submission view"
-                            >
-                              <ExternalLink className="w-5 h-5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>

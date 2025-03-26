@@ -129,11 +129,11 @@ exports.getHackathons = async (req, res) => {
     const hackathons = await Hackathon.find(filter)
       .populate({
         path: 'createdBy',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       })
       .populate({
         path: 'collaborators',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       });
 
     // Get participant and submission counts for each hackathon
@@ -169,11 +169,11 @@ exports.getHackathon = async (req, res) => {
     const hackathon = await Hackathon.findById(req.params.id)
       .populate({
         path: 'createdBy',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       })
       .populate({
         path: 'collaborators',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       });
 
     if (!hackathon) {
@@ -526,7 +526,7 @@ exports.getLeaderboard = async (req, res) => {
       .populate({
         path: 'userId',
 
-        select: 'fullName state district grade schoolName',
+        select: 'fullName state district grade schoolCollegeName',
       });
 
 
@@ -638,11 +638,11 @@ exports.getCompletedHackathons = async (req, res) => {
     const hackathons = await Hackathon.find(filter)
       .populate({
         path: 'createdBy',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       })
       .populate({
         path: 'collaborators',
-        select: 'fullName schoolName',
+        select: 'fullName schoolCollegeName',
       });
     
     // Get participant and submission counts for each hackathon
@@ -736,11 +736,11 @@ const getHackathonWithCounts = async (hackathonId) => {
   const hackathon = await Hackathon.findById(hackathonId)
     .populate({
       path: 'createdBy',
-      select: 'fullName schoolName',
+      select: 'fullName schoolCollegeName',
     })
     .populate({
       path: 'collaborators',
-      select: 'fullName schoolName',
+      select: 'fullName schoolCollegeName',
     });
 
   const participantCount = await Participant.countDocuments({ hackathonId });

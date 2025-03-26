@@ -2,7 +2,7 @@ const Teacher = require("../models/user.model");
 
 // Register
 const pendingTeacherApproval= async (req, res) => {
-    const { fullName, email, phoneNumber, role, schoolName, collegeNumber, pin } = req.body;
+    const { fullName, email, phoneNumber, role, schoolCollegeName, collegeNumber, pin } = req.body;
 
     const existingTeacher = await Teacher.findOne({ email });
     if (existingTeacher) {
@@ -10,7 +10,7 @@ const pendingTeacherApproval= async (req, res) => {
     }
 
 
-    const newTeacher = new Teacher({ fullName, email, phoneNumber, role, schoolName, collegeNumber, pin });
+    const newTeacher = new Teacher({ fullName, email, phoneNumber, role, schoolCollegeName, collegeNumber, pin });
     await newTeacher.save();
 
     res.status(201).json({ message: "Teacher registration is pending approval by the Admin." });

@@ -21,7 +21,7 @@ router.get('/pending-teachers',isAdmin,  async (req, res) => {
 
 router.post("/register-new-teacher", async (req, res) => {
     try {
-      const { fullName, email, phoneNumber, schoolName, gender, state, collegeNumber, pin } = req.body;
+      const { fullName, email, phoneNumber, schoolCollegeName, gender, state, collegeNumber, pin } = req.body;
   
       // ✅ Check if email is already registered
       const existingTeacher = await Teacher.findOne({ email });
@@ -34,7 +34,7 @@ router.post("/register-new-teacher", async (req, res) => {
         fullName,
         email,
         phoneNumber,
-        schoolName,
+        schoolCollegeName,
         gender,
         state,
         collegeNumber,

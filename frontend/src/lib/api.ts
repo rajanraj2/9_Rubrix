@@ -15,7 +15,7 @@ interface StudentRegistrationData {
 interface TeacherRegistrationData {
   fullName: string;
   phoneNumber: string;
-  schoolName: string;
+  schoolCollegeName: string;
   gender: string;
   state: string;
   collegeNumber: string;

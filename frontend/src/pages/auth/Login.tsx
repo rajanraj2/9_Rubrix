@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useAuth } from '../../lib/authContext';
@@ -102,13 +102,11 @@ const Login = () => {
         >
           {isLoading ? 'Logging in...' : 'Login'}
         </button>
-        
-
 
         <div className="text-center mt-4">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/" className="underline text-indigo-600 hover:text-indigo-700">
+            <Link to="/" className="text-indigo-600 hover:text-indigo-700">
               Register here
             </Link>
           </p>

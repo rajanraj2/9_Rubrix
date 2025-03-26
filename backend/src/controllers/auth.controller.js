@@ -71,7 +71,7 @@ exports.registerStudent = async (req, res) => {
 // Register a teacher
 exports.registerTeacher = async (req, res) => {
   try {
-    const { fullName, email, phoneNumber, schoolName, gender, state, collegeNumber, pin } = req.body;
+    const { fullName, email, phoneNumber, schoolCollegeName, gender, state, collegeNumber, pin } = req.body;
 
     // Check if user already exists with the same phone number
     const existingUser = await User.findOne({ email, role: 'teacher' });
@@ -95,7 +95,7 @@ exports.registerTeacher = async (req, res) => {
       email,
       phoneNumber,
       role: 'pending',
-      schoolName,
+      schoolCollegeName,
       gender,
       state,
       collegeNumber,

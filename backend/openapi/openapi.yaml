@@ -57,7 +57,7 @@ components:
         - $ref: '#/components/schemas/User'
         - type: object
           properties:
-            schoolName:
+            schoolCollegeName:
               type: string
             gender:
               type: string
@@ -255,7 +255,7 @@ paths:
               required:
                 - fullName
                 - phoneNumber
-                - schoolName
+                - schoolCollegeName
                 - gender
                 - state
                 - collegeNumber
@@ -265,7 +265,7 @@ paths:
                   type: string
                 phoneNumber:
                   type: string
-                schoolName:
+                schoolCollegeName:
                   type: string
                 gender:
                   type: string

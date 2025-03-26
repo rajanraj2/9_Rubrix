@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(true);
       setError(null);
       const response = await authAPI.registerTeacher(data);
+      console.log("teacher data in authcontext: ", response);
       setUser(response.data.user);
       navigate('/dashboard/teacher');
     } catch (err: any) {

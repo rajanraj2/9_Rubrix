@@ -176,7 +176,7 @@ exports.getSubmissions = async (req, res) => {
       .populate({
         path: 'userId',
 
-        select: 'fullName phoneNumber state district grade gender schoolName',
+        select: 'fullName phoneNumber state district grade gender schoolCollegeName',
       });
     
 
@@ -369,7 +369,7 @@ exports.getShortlisted = async (req, res) => {
     }).populate({
       path: 'userId',
 
-      select: 'fullName phoneNumber state district grade gender schoolName',
+      select: 'fullName phoneNumber state district grade gender schoolCollegeName',
     });
 
     res.status(200).json({

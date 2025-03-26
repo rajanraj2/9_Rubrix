@@ -26,7 +26,7 @@ interface Submission {
     district?: string;
     grade?: string;
     gender?: string;
-    schoolName?: string;
+    schoolCollegeName?: string;
   };
   submissionText?: string;
   files?: Array<{
@@ -59,7 +59,7 @@ interface SubmissionResponse {
     district?: string;
     grade?: string;
     gender?: string;
-    schoolName?: string;
+    schoolCollegeName?: string;
   };
   hackathonId: string;
   submissionText?: string;
