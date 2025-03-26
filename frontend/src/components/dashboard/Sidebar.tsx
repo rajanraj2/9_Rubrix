@@ -19,13 +19,13 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const [isHackathonOpen, setIsHackathonOpen] = useState(true);
 
   const studentLinks = [
-    { icon: LayoutDashboard, label: 'Ongoing Hackathons', href: '/dashboard/student/ongoing' },
-    { icon: Trophy, label: 'Completed Hackathons', href: '/dashboard/student/completed' },
+    { icon: LayoutDashboard, label: 'Ongoing Hackathons', href: '/dashboard/student/ongoing-hackathons' },
+    { icon: Trophy, label: 'Completed Hackathons', href: '/dashboard/student/completed-hackathons' },
   ];
 
   const teacherLinks = [
     { icon: LayoutDashboard, label: 'Current Hackathons', href: '/dashboard/teacher' },
-    { icon: Plus, label: 'Create Hackathon', href: '/dashboard/teacher/create' },
+    { icon: Plus, label: 'Create Hackathon', href: '/dashboard/teacher/create-hackathon' },
   ];
 
   const hackathonLinks = hackathonId ? [

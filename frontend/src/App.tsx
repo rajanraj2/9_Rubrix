@@ -20,6 +20,7 @@ import AdminLogin from './pages/auth/AdminLogin';
 import ProtectedAdminRoute from './pages/utils/ProtectedAdminRoute';
 import AdminDashboard from './pages/dashboard/AdminDashBoard';
 import SubmissionViewPage from './pages/dashboard/SubmissionViewPage';
+import CompletedHackathonView from './pages/dashboard/CompletedHackathonView';
 
 
 // Protected route component
@@ -66,6 +67,8 @@ const AppWithAuth = () => {
           <Route path="/dashboard/student" element={<StudentDashboard />} />
           <Route path="/dashboard/student/hackathon/:hackathonId" element={<HackathonDetail />} />
           <Route path="/dashboard/student/hackathon/:hackathonId/submission" element={<HackathonSubmission />} />
+          <Route path="/dashboard/student/completed-hackathons" element={<CompletedHackathonView />} />
+          <Route path="/dashboard/student/ongoing-hackathons" element={<StudentDashboard />} />
         </Route>
 
         {/* Teacher Routes */}
