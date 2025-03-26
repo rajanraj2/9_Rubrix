@@ -519,15 +519,18 @@ exports.getLeaderboard = async (req, res) => {
       .sort({ totalScore: -1 })
       .populate({
         path: 'userId',
-        select: 'fullName state district grade',
+        select: 'fullName state district grade gender schoolName',
       });
 
+    console.log(`Returning ${submissions.length} submissions for hackathon ${hackathonId}`);
+    
     res.status(200).json({
       success: true,
       count: submissions.length,
       data: submissions,
     });
   } catch (error) {
+    console.error('Error in getLeaderboard:', error);
     res.status(500).json({
       success: false,
       message: error.message,

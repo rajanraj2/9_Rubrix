@@ -175,8 +175,10 @@ exports.getSubmissions = async (req, res) => {
     const submissions = await Submission.find({ hackathonId })
       .populate({
         path: 'userId',
-        select: 'fullName phoneNumber state district grade gender',
+        select: 'fullName phoneNumber state district grade gender schoolName',
       });
+    
+    console.log(`Returning ${submissions.length} submissions for hackathon ${hackathonId}`);
     
     res.status(200).json({
       success: true,
@@ -184,6 +186,7 @@ exports.getSubmissions = async (req, res) => {
       data: submissions,
     });
   } catch (error) {
+    console.error('Error in getSubmissions:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -365,8 +368,10 @@ exports.getShortlisted = async (req, res) => {
       isShortlisted: true,
     }).populate({
       path: 'userId',
-      select: 'fullName phoneNumber state district grade gender',
+      select: 'fullName phoneNumber state district grade gender schoolName',
     });
+    
+    console.log(`Returning ${submissions.length} shortlisted submissions for hackathon ${hackathonId}`);
     
     res.status(200).json({
       success: true,
@@ -374,6 +379,7 @@ exports.getShortlisted = async (req, res) => {
       data: submissions,
     });
   } catch (error) {
+    console.error('Error in getShortlisted:', error);
     res.status(500).json({
       success: false,
       message: error.message,
