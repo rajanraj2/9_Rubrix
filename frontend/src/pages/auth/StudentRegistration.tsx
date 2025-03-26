@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link, NavLink } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -59,10 +61,20 @@ const StudentRegistration = () => {
 
   ];
   const gradeOptions = [
+    { value: '1', label: '1st Grade' },
+    { value: '2', label: '2nd Grade' },
+    { value: '3', label: '3rd Grade' },
+    { value: '4', label: '4th Grade' },
+    { value: '5', label: '5th Grade' },
+    { value: '6', label: '6th Grade' },
+    { value: '7', label: '7th Grade' },
+    { value: '8', label: '8th Grade' },
     { value: '9', label: '9th Grade' },
     { value: '10', label: '10th Grade' },
     { value: '11', label: '11th Grade' },
     { value: '12', label: '12th Grade' },
+    {value: 'UG', label: 'Undergraduate'},
+    {value: 'PG', label: 'Postgraduate'},
   ];
 
 const stateOptions = [
@@ -105,8 +117,8 @@ const customStyles = {
 };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Student Registration</h2>
+    <div className="p-4">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4  text-center">Student Registration</h2>
       
       {error && (
         <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
@@ -136,12 +148,7 @@ const customStyles = {
           <Input {...register('phoneNumber')} error={errors.phoneNumber?.message} placeholder="Enter 10-digit phone number" type="tel" />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            School/College Name
-          </label>
-          <Input {...register('schoolCollegeName')} error={errors.schoolCollegeName?.message} placeholder="Enter your school or college name" />
-        </div>
+        
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -232,6 +239,15 @@ const customStyles = {
         >
           {isLoading ? 'Registering...' : 'Register'}
         </button>
+
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link to="/" className="underline text-indigo-600 hover:text-indigo-700">
+              Login here
+            </Link>
+          </p>
+        </div>
       </form>
     </div>
   );

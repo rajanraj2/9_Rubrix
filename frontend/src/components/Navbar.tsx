@@ -8,7 +8,8 @@ const Navbar = () => {
   const location = useLocation();
   
   // Don't show navbar on login/register pages
-  if (location.pathname === '/login' || 
+  if (location.pathname === '/' ||
+      location.pathname === '/login' || 
       location.pathname === '/register/student' || 
       location.pathname === '/register/teacher') {
     return null;
@@ -45,9 +46,10 @@ const Navbar = () => {
                   to="/login" 
                   className="text-gray-600 hover:text-indigo-600"
                 >
-                  Login
+                  <button type="button" className="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Login</button>
+
                 </Link>
-                <Link 
+                {/* <Link 
                   to="/register/student"
                   className="text-gray-600 hover:text-indigo-600"
                 >
@@ -58,7 +60,7 @@ const Navbar = () => {
                   className="text-gray-600 hover:text-indigo-600"
                 >
                   Teacher Sign Up
-                </Link>
+                </Link> */}
               </>
             )}
           </div>

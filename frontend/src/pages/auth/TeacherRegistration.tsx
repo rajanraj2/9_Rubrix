@@ -9,6 +9,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Select from 'react-select';
 import { useAuth } from '../../lib/authContext';
 import axios from 'axios';
+import { Link, NavLink } from 'react-router-dom';
 
 
 const teacherSchema = z.object({
@@ -161,8 +162,8 @@ const TeacherRegistration = () => {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Teacher Registration</h2>
+    <div className="p-4">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4  text-center">Teacher Registration</h2>
       
       {error && (
         <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
@@ -313,6 +314,16 @@ const TeacherRegistration = () => {
         >
           {isLoading ? 'Registering...' : 'Register'}
         </button>
+
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link to="/" className="underline text-indigo-600 hover:text-indigo-700">
+              Login here
+            </Link>
+          </p>
+        </div>
+
       </form>
     </div>
   );

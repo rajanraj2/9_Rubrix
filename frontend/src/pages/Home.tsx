@@ -16,13 +16,13 @@ const Home = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           <Link
             to="/register/student"
             className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-8 flex flex-col items-center"
           >
             <GraduationCap className="w-16 h-16 text-indigo-600 mb-4 group-hover:scale-110 transition-transform" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">Student Registration</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">I'm a student</h2>
             <p className="text-gray-600 text-center">
               Register as a student to participate in hackathons and showcase your innovative solutions.
             </p>
@@ -33,13 +33,13 @@ const Home = () => {
             className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-8 flex flex-col items-center"
           >
             <School className="w-16 h-16 text-indigo-600 mb-4 group-hover:scale-110 transition-transform" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">Teacher Registration</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-3">I'm a teacher</h2>
             <p className="text-gray-600 text-center">
               Join as a teacher to create and manage hackathons, evaluate submissions, and mentor students.
             </p>
           </Link>
 
-          <Link
+          {/* <Link
             to="/login"
             className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-8 flex flex-col items-center"
           >
@@ -48,7 +48,7 @@ const Home = () => {
             <p className="text-gray-600 text-center">
               Already have an account? Login here to access your dashboard and continue your journey.
             </p>
-          </Link>
+          </Link> */}
         </div>
       </div>
     </div>
