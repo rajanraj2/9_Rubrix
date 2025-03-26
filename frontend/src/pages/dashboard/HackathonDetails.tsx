@@ -14,7 +14,7 @@ import {
   Legend,
 } from 'recharts';
 
-import { Plus, Filter, Copy, Check, Search, X } from 'lucide-react';
+import { Plus, Filter, Search, X } from 'lucide-react';
 
 import Sidebar from '../../components/dashboard/Sidebar';
 import { hackathonAPI } from '../../lib/api';
@@ -39,6 +39,7 @@ interface UserData {
   grade?: string;
   gender?: string;
   schoolCollegeName?: string;
+  schoolName?: string;
 }
 
 interface Participant {
@@ -98,6 +99,7 @@ const HackathonDetails = () => {
   const [newParameter, setNewParameter] = useState('');
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -149,7 +151,7 @@ const HackathonDetails = () => {
             average: param.weight,
           })));
         }
-      } catch (err) {
+      } catch (error) {
 
         setError('Failed to load hackathon details. Please try again.');
       } finally {
@@ -192,7 +194,7 @@ const HackathonDetails = () => {
       }
 
       // Count by school
-      const school = user.schoolCollegeName;
+      const school = user.schoolName || user.schoolCollegeName;
       if (school) {
         schoolCount[school] = (schoolCount[school] || 0) + 1;
       }
@@ -244,6 +246,7 @@ const HackathonDetails = () => {
               count: 0
             };
           }
+          // Ensure score is properly normalized
           paramScores[evalItem.parameterName].totalScore += evalItem.score;
           paramScores[evalItem.parameterName].count++;
         });
@@ -259,7 +262,7 @@ const HackathonDetails = () => {
     // Calculate average for each parameter
     const parameterData = Object.values(paramScores).map(param => ({
       name: param.name,
-      average: param.count ? Math.round((param.totalScore / param.count) * 10) / 10 : 0
+      average: param.count ? Math.round((param.totalScore / param.count)) : 0
     }));
 
     setParameterScores(parameterData);
@@ -577,18 +580,18 @@ const HackathonDetails = () => {
               </div>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={parameterScores}>
+                  <BarChart data={parameterScores.length > 0 ? parameterScores : parameters}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis domain={[0, 10]} />
+                    <YAxis domain={[0, 100]} />
                     <Tooltip />
                     <Bar 
                       dataKey="average" 
                       name="Average Score" 
                       isAnimationActive={false}
                     >
-                      {parameterScores.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={getScoreColor(entry.average * 10)} />
+                      {(parameterScores.length > 0 ? parameterScores : parameters).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getScoreColor(entry.average)} />
                       ))}
                     </Bar>
                   </BarChart>

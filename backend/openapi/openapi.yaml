@@ -1193,4 +1193,563 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error' 
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/insights/{hackathonId}:
+    get:
+      summary: Generate insights for a hackathon
+      description: Generate insights for a hackathon based on demographic filters, parameter criteria, and score thresholds.
+      tags:
+        - Analytics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: hackathonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: demographic_filters
+          in: query
+          required: false
+          schema:
+            type: object
+            additionalProperties: true
+            example:
+              state: "Maharashtra"
+              grade: "10"
+        - name: parameter_criteria
+          in: query
+          required: false
+          schema:
+            type: object
+            additionalProperties: true
+            example:
+              parameter1Id: 7
+              parameter2Id: 6
+        - name: score_threshold
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            maximum: 100
+            default: 0
+      responses:
+        '200':
+          description: Successfully generated insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalSubmissions:
+                        type: integer
+                        example: 150
+                      demographicInsights:
+                        type: object
+                        properties:
+                          byState:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                          byGender:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                          byGrade:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                          bySchool:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                          byDistrict:
+                            type: object
+                            additionalProperties:
+                              type: integer
+                      parameterInsights:
+                        type: object
+                        additionalProperties:
+                          type: object
+                          properties:
+                            average:
+                              type: number
+                            highest:
+                              type: number
+                            lowest:
+                              type: number
+                            distribution:
+                              type: object
+                              additionalProperties:
+                                type: number
+                      overallScores:
+                        type: object
+                        properties:
+                          average:
+                            type: number
+                          distribution:
+                            type: object
+                            additionalProperties:
+                              type: number
+                          topPerformers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                submissionId:
+                                  type: string
+                                user:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    school:
+                                      type: string
+                                    grade:
+                                      type: string
+                                totalScore:
+                                  type: number
+                          scoreThreshold:
+                            type: object
+                            properties:
+                              count:
+                                type: integer
+                              percentage:
+                                type: number
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '404':
+          description: Hackathon not found
+
+  /api/analytics/leaderboard/{hackathonId}:
+    get:
+      summary: Generate a custom leaderboard
+      description: Generate a customized leaderboard based on filters, grouping criteria, and sorting options.
+      tags:
+        - Analytics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: hackathonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: filters
+          in: query
+          required: false
+          schema:
+            type: object
+            additionalProperties: true
+            example:
+              state: "Maharashtra"
+              grade: "10"
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [state, district, grade, gender, schoolName]
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            default: totalScore
+        - name: sort_order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+        - name: min_score
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 0
+      responses:
+        '200':
+          description: Successfully generated leaderboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: object
+                          properties:
+                            rank:
+                              type: integer
+                            submissionId:
+                              type: string
+                            user:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                                grade:
+                                  type: string
+                                school:
+                                  type: string
+                                state:
+                                  type: string
+                                district:
+                                  type: string
+                                gender:
+                                  type: string
+                            totalScore:
+                              type: number
+                            parameterScores:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  parameter:
+                                    type: string
+                                  score:
+                                    type: number
+                            isShortlisted:
+                              type: boolean
+                        - type: object
+                          properties:
+                            groupName:
+                              type: string
+                            submissionCount:
+                              type: integer
+                            averageScore:
+                              type: number
+                            parameterScores:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  parameter:
+                                    type: string
+                                  score:
+                                    type: number
+                            topPerformer:
+                              type: object
+                              properties:
+                                submissionId:
+                                  type: string
+                                user:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    school:
+                                      type: string
+                                    grade:
+                                      type: string
+                                totalScore:
+                                  type: number
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '404':
+          description: Hackathon not found
+
+  /api/analytics/clusters/{hackathonId}:
+    post:
+      summary: Group students into clusters
+      description: Group students into clusters based on parameters, scores, or demographics.
+      tags:
+        - Analytics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: hackathonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cluster_by:
+                  type: string
+                  enum: [parameters, demographics, scores]
+                  default: parameters
+                num_clusters:
+                  type: integer
+                  default: 3
+                parameters:
+                  type: array
+                  items:
+                    type: string
+                filters:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Successfully generated clusters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        clusterId:
+                          type: integer
+                        clusterName:
+                          type: string
+                        size:
+                          type: integer
+                        centroid:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              parameter:
+                                type: string
+                              score:
+                                type: number
+                        averageScore:
+                          type: number
+                        members:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              submissionId:
+                                type: string
+                              user:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                  name:
+                                    type: string
+                                  school:
+                                    type: string
+                                  grade:
+                                    type: string
+                              totalScore:
+                                type: number
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '404':
+          description: Hackathon not found
+
+  /api/analytics/shortlist/{hackathonId}:
+    post:
+      summary: Shortlist students based on criteria
+      description: Filter and optionally shortlist students based on specified criteria.
+      tags:
+        - Analytics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: hackathonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                criteria:
+                  type: object
+                  properties:
+                    min_total_score:
+                      type: number
+                    parameter_scores:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          parameterId:
+                            type: string
+                          parameterName:
+                            type: string
+                          min_score:
+                            type: number
+                    demographics:
+                      type: object
+                      additionalProperties: true
+                auto_shortlist:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Successfully retrieved shortlist candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        submissionId:
+                          type: string
+                        user:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            grade:
+                              type: string
+                            school:
+                              type: string
+                            state:
+                              type: string
+                            district:
+                              type: string
+                            gender:
+                              type: string
+                        totalScore:
+                          type: number
+                        parameterScores:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              parameter:
+                                type: string
+                              score:
+                                type: number
+                        isShortlisted:
+                          type: boolean
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '404':
+          description: Hackathon not found
+  
+  /api/analytics/shortlisted/{hackathonId}:
+    get:
+      summary: Get shortlisted students
+      description: Retrieve all shortlisted students for a hackathon.
+      tags:
+        - Analytics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: hackathonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved shortlisted students
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        submissionId:
+                          type: string
+                        user:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            grade:
+                              type: string
+                            school:
+                              type: string
+                            state:
+                              type: string
+                            district:
+                              type: string
+                            gender:
+                              type: string
+                        totalScore:
+                          type: number
+                        parameterScores:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              parameter:
+                                type: string
+                              score:
+                                type: number
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized
+        '404':
+          description: Hackathon not found 
