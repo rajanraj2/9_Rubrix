@@ -70,7 +70,9 @@ const StudentRegistration = () => {
     { value: '9', label: '9th Grade' },
     { value: '10', label: '10th Grade' },
     { value: '11', label: '11th Grade' },
-    { value: '12', label: '12th Grade' }
+    { value: '12', label: '12th Grade' },
+    { value: 'ug', label: 'Undergraduate' },
+    { value: 'pg', label: 'Postgraduate' }
   ];
 
 const stateOptions = [
