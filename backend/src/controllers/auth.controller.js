@@ -33,20 +33,21 @@ const sendTokenResponse = (user, statusCode, res) => {
 // Register a student
 exports.registerStudent = async (req, res) => {
   try {
-    const { fullName, phoneNumber, schoolCollegeName, state, district, grade, gender, pin } = req.body;
+    const { fullName, email, phoneNumber, schoolCollegeName, state, district, grade, gender, pin } = req.body;
 
     // Check if user already exists with the same phone number
-    const existingUser = await User.findOne({ phoneNumber, role: 'student' });
+    const existingUser = await User.findOne({ email, role: 'student' });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'A student with this phone number already exists',
+        message: 'A student with this email already exists',
       });
     }
 
     // Create student
     const student = await User.create({
       fullName,
+      email,
       phoneNumber,
       role: 'student',
       schoolCollegeName,
@@ -70,22 +71,30 @@ exports.registerStudent = async (req, res) => {
 // Register a teacher
 exports.registerTeacher = async (req, res) => {
   try {
-    const { fullName, phoneNumber, schoolName, gender, state, collegeNumber, pin } = req.body;
+    const { fullName, email, phoneNumber, schoolName, gender, state, collegeNumber, pin } = req.body;
 
     // Check if user already exists with the same phone number
-    const existingUser = await User.findOne({ phoneNumber, role: 'teacher' });
+    const existingUser = await User.findOne({ email, role: 'teacher' });
+    const pendingTeacher = await User.findOne({ email, role: 'pending' });
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'A teacher with this phone number already exists',
       });
     }
+    if(pendingTeacher) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have applied for registration, wait for approval',
+      });
+    }
 
     // Create teacher
     const teacher = await User.create({
       fullName,
+      email,
       phoneNumber,
-      role: 'teacher',
+      role: 'pending',
       schoolName,
       gender,
       state,
@@ -106,26 +115,37 @@ exports.registerTeacher = async (req, res) => {
 // Login user
 exports.login = async (req, res) => {
   try {
-    const { phoneNumber, pin, role } = req.body;
+    const { email, role,  pin } = req.body;
 
     // Validate inputs
-    if (!phoneNumber || !pin || !role) {
+    if (!email || !pin || !role) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide phone number, PIN, and role',
+        message: 'Please provide email, PIN and role',
       });
     }
 
     // Check if user exists
-    const user = await User.findOne({ phoneNumber, role }).select('+pin');
-    if (!user) {
+    const user = await User.findOne({ email }).select('+pin');
+    // const teacher = await User.findOne({ email, role: 'teacher' }).select('+pin');
+    // const student = await User.findOne({ email, role: 'student' }).select('+pin');
+    // const pendingTeacher = await User.findOne({ email, role: 'pending' }).select('+pin');
+    // if(!teacher && !student && !pendingTeacher) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: `This email is not registered. Please register first.`,
+    //   });
+    // }
+    if(!user){
       return res.status(401).json({
         success: false,
-        message: `This phone number is not registered as a ${role}. Please register first.`,
+        message: `This email is not registered. Please register first.`,
       });
     }
 
-    // Check if PIN matches
+    if(user.role === 'pending') {
+        return res.status(403).json({ message: "Your registration is pending for approval from Admin." });
+    }
     const isMatch = await user.comparePin(pin);
     if (!isMatch) {
       return res.status(401).json({

@@ -8,7 +8,8 @@ import Select from '../../components/ui/Select';
 import { useAuth } from '../../lib/authContext';
 
 const loginSchema = z.object({
-  phoneNumber: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
+  email: z.string().email('Invalid email address'),
+  
   pin: z.string().regex(/^\d{4}$/, 'PIN must be 4 digits'),
   role: z.enum(['student', 'teacher'], { required_error: 'Please select a role' }),
 });
@@ -32,7 +33,10 @@ const Login = () => {
     try {
       setIsLoading(true);
       setError(null);
-      await login(data.phoneNumber, data.pin, data.role);
+
+
+      await login(data.email, data.role,  data.pin,);
+
       // Navigation is handled in the auth context
     } catch (err: any) {
       setError(err.response?.data?.message || authError || 'Login failed. Please try again.');
@@ -54,12 +58,12 @@ const Login = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
+           Email
           </label>
           <Input
-            {...register('phoneNumber')}
-            error={errors.phoneNumber?.message}
-            placeholder="Enter 10-digit phone number"
+            {...register('email')}
+            error={errors.email?.message}
+            placeholder="Enter your email id"
             type="tel"
           />
         </div>

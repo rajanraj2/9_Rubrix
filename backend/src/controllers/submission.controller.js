@@ -175,18 +175,18 @@ exports.getSubmissions = async (req, res) => {
     const submissions = await Submission.find({ hackathonId })
       .populate({
         path: 'userId',
+
         select: 'fullName phoneNumber state district grade gender schoolName',
       });
     
-    console.log(`Returning ${submissions.length} submissions for hackathon ${hackathonId}`);
-    
+
     res.status(200).json({
       success: true,
       count: submissions.length,
       data: submissions,
     });
   } catch (error) {
-    console.error('Error in getSubmissions:', error);
+    
     res.status(500).json({
       success: false,
       message: error.message,
@@ -368,23 +368,34 @@ exports.getShortlisted = async (req, res) => {
       isShortlisted: true,
     }).populate({
       path: 'userId',
+
       select: 'fullName phoneNumber state district grade gender schoolName',
     });
-    
-    console.log(`Returning ${submissions.length} shortlisted submissions for hackathon ${hackathonId}`);
-    
+
     res.status(200).json({
       success: true,
       count: submissions.length,
       data: submissions,
     });
   } catch (error) {
-    console.error('Error in getShortlisted:', error);
+
     res.status(500).json({
       success: false,
       message: error.message,
     });
   }
+};
+
+exports.removeShortlisted = async (req, res) => {
+  try {
+    const { submissionId } = req.body;
+    await Submission.findByIdAndUpdate(submissionId, { isShortlisted: false });
+
+    res.json({ success: true, message: 'Submission removed from shortlist' });
+} catch (error) {
+    console.error('Error removing from shortlist:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+}
 };
 
 // Get user's submissions

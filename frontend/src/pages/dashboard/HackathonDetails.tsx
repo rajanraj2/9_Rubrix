@@ -13,7 +13,9 @@ import {
   Cell,
   Legend,
 } from 'recharts';
-import { Plus, Filter, Search, X } from 'lucide-react';
+
+import { Plus, Filter, Copy, Check, Search, X } from 'lucide-react';
+
 import Sidebar from '../../components/dashboard/Sidebar';
 import { hackathonAPI } from '../../lib/api';
 import { Hackathon } from '../../components/dashboard/HackathonCard';
@@ -97,6 +99,7 @@ const HackathonDetails = () => {
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -112,6 +115,7 @@ const HackathonDetails = () => {
   const [scoreDistribution, setScoreDistribution] = useState<ScoreDistributionData[]>([]);
   const [parameterScores, setParameterScores] = useState<ParameterScoreData[]>([]);
 
+
   useEffect(() => {
     const fetchHackathonDetails = async () => {
       if (!hackathonId) return;
@@ -119,6 +123,7 @@ const HackathonDetails = () => {
       try {
         setIsLoading(true);
         setError(null);
+
         
         // Fetch hackathon details
         const response = await hackathonAPI.getHackathon(hackathonId);
@@ -139,12 +144,13 @@ const HackathonDetails = () => {
         // If there are parameters defined, use them
         if (response.data.data.parameters && response.data.data.parameters.length > 0) {
           setParameters(response.data.data.parameters.map((param: HackathonParameter) => ({
+
             name: param.name,
             average: param.weight,
           })));
         }
       } catch (err) {
-        console.error('Error fetching hackathon data:', err);
+
         setError('Failed to load hackathon details. Please try again.');
       } finally {
         setIsLoading(false);
@@ -153,6 +159,7 @@ const HackathonDetails = () => {
 
     fetchHackathonDetails();
   }, [hackathonId]);
+
 
   const processParticipantData = (participants: Participant[]) => {
     // Process state data
@@ -258,12 +265,14 @@ const HackathonDetails = () => {
     setParameterScores(parameterData);
   };
 
+
   const handleAddParameter = () => {
     if (newParameter.trim()) {
       setParameters([...parameters, { name: newParameter, average: 0 }]);
       setNewParameter('');
     }
   };
+
 
   const handleFilterByPhone = () => {
     if (!phoneFilter.trim()) {
@@ -295,6 +304,7 @@ const HackathonDetails = () => {
   const clearFilter = () => {
     setPhoneFilter('');
     setFilteredData(null);
+
   };
 
   if (isLoading) {
@@ -329,6 +339,7 @@ const HackathonDetails = () => {
           <h1 className="text-2xl font-semibold text-gray-900">{hackathon.title}</h1>
           <p className="text-gray-600 mt-1">{hackathon.description}</p>
           
+
           <div className="mt-4 flex justify-between items-center">
             <div className="flex space-x-4">
               <button
@@ -403,6 +414,7 @@ const HackathonDetails = () => {
                 </div>
               )}
             </div>
+
           </div>
         </div>
 

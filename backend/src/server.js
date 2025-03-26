@@ -4,6 +4,8 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth.routes');
+const adminLoginRoute = require("./routes/adminAuthRoute");
+const adminApprovalRoute = require("./routes/adminRoute");
 const hackathonRoutes = require('./routes/hackathon.routes');
 const submissionRoutes = require('./routes/submission.routes');
 const errorHandler = require('./middleware/error.middleware');
@@ -42,10 +44,15 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/hackathon
     process.exit(1);
   });
 
+  mongoose.set("debug", true);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/hackathons', hackathonRoutes);
 app.use('/api/submissions', submissionRoutes);
+
+app.use("/api/admin", adminLoginRoute);
+app.use("/api/admin/approval", adminApprovalRoute);
 
 // Root route
 app.get('/', (req, res) => {

@@ -8,16 +8,29 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide your full name'],
     trim: true,
   },
+
+  email: {
+    type: String,
+    required: function() { return this.role === 'teacher'; },
+    unique: true,
+    match: [
+      /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+      'Please provide a valid email',
+    ],
+  },
   phoneNumber: {
     type: String,
-    required: [true, 'Please provide your phone number'],
+    required: function() { return this.role === 'student'; },
     unique: true,
     match: [/^\d{10}$/, 'Phone number must be 10 digits'],
   },
   role: {
     type: String,
-    enum: ['student', 'teacher'],
-    required: [true, 'Please specify user role'],
+
+    enum: ['student', 'teacher', 'pending', 'admin', 'superadmin'],
+    default: 'student',
+    required: [true, 'Please provide your role'],
+    
   },
   // Student specific fields
   schoolCollegeName: {

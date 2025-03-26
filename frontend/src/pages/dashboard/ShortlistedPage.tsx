@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ChevronRight, ExternalLink } from 'lucide-react';
 import Sidebar from '../../components/dashboard/Sidebar';
@@ -12,6 +13,7 @@ interface Submission {
   submissionTitle: string;
   submissionDate: string;
   overallScore: number;
+
   parameters: {
     [key: string]: number;
   };
@@ -82,10 +84,12 @@ interface SubmissionResponse {
   };
   submittedAt: string;
   evaluatedAt?: string;
+
 }
 
 const ShortlistedPage: React.FC = () => {
   const { hackathonId } = useParams<{ hackathonId: string }>();
+
   const navigate = useNavigate();
   // In a real app, you would use the hackathonId to fetch only shortlisted submissions for this specific hackathon
   console.log(`Loading shortlisted submissions for hackathon: ${hackathonId}`);
@@ -237,6 +241,7 @@ const ShortlistedPage: React.FC = () => {
 
   const viewSubmissionDetails = (submissionId: string) => {
     navigate(`/dashboard/teacher/submission/${submissionId}`);
+
   };
 
   return (
@@ -247,6 +252,7 @@ const ShortlistedPage: React.FC = () => {
           <h1 className="text-2xl font-semibold text-gray-900">Shortlisted Submissions</h1>
           <p className="text-gray-600 mt-1">View and manage submissions you've marked as important</p>
         </div>
+
 
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="lg:w-3/4">
@@ -260,43 +266,32 @@ const ShortlistedPage: React.FC = () => {
                   <p className="text-red-500">{error}</p>
                 </div>
               ) : shortlistedSubmissions.length > 0 ? (
+
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Student
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Submission
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Score
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submission</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {shortlistedSubmissions.map((submission) => (
                         <tr key={submission.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {submission.studentName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {submission.submissionTitle}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 text-sm text-gray-500">{submission.studentName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{submission.submissionTitle}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
                             {new Date(submission.submissionDate).toLocaleDateString()}
                           </td>
+
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {Math.round(submission.overallScore)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+
                             <button
                               onClick={() => handleRemoveShortlist(submission.id)}
                               className="text-yellow-500 hover:text-yellow-700"
@@ -322,6 +317,7 @@ const ShortlistedPage: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
               ) :
                 <div className="text-center py-12 px-4">
                   <Star className="mx-auto h-12 w-12 text-gray-400" />
@@ -331,9 +327,19 @@ const ShortlistedPage: React.FC = () => {
                   </p>
                 </div>
               }
+
             </div>
+
+            {/* {selectedSubmission && (
+              <div className="lg:w-1/4 bg-white rounded-lg shadow">
+                <SubmissionDetail
+                  submissionId={selectedSubmission}
+                  onClose={() => setSelectedSubmission(null)}
+                />
+              </div>
+            )} */}
           </div>
-          
+
           {selectedSubmission && (
             <div className="lg:w-1/4 bg-white rounded-lg shadow">
               <SubmissionDetail
@@ -349,4 +355,4 @@ const ShortlistedPage: React.FC = () => {
   );
 };
 
-export default ShortlistedPage; 
+export default ShortlistedPage;

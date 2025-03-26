@@ -3,11 +3,17 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
+
+import { Eye, EyeOff } from 'lucide-react';
+// import Select from '../../components/ui/Select';
+import Select from 'react-select';
 import { useAuth } from '../../lib/authContext';
+import axios from 'axios';
+
 
 const teacherSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
   phoneNumber: z.string().regex(/^\d{10}$/, 'Phone number must be 10 digits'),
   schoolName: z.string().min(2, 'School name is required'),
   gender: z.enum(['male', 'female', 'other']),
@@ -22,21 +28,79 @@ const TeacherRegistration = () => {
   const { registerTeacher, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showPin, setShowPin] = useState(false); 
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+
+
   
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<TeacherFormData>({
     resolver: zodResolver(teacherSchema),
   });
 
+
+  // ✅ Send Verification Code to Email
+  const sendVerificationCode = async () => {
+    const email = getValues('email');
+    if (!email) {
+      setEmailError('Please enter a valid email');
+      return;
+    }
+
+    try {
+      await axios.post("http://localhost:5001/api/auth/teacher/send-verification-code", { email });
+      setEmailSent(true);
+      setEmailError('');
+      alert("Verification code sent to your email.");
+    } catch (error) {
+      setEmailError("Failed to send verification code.");
+    }
+  };
+
+  // ✅ Verify the Code Entered
+  const verifyCode = async () => {
+    const email = getValues('email');
+    try {
+      const response = await axios.post("http://localhost:5001/api/auth/teacher/verify-email", {
+        email,
+        code: verificationCode,
+      });
+
+      if (response.data.message === "Email verified successfully!") {
+        setEmailVerified(true);
+        alert("Email verified successfully!");
+      } else {
+        alert("Invalid verification code.");
+      }
+    } catch (error) {
+      alert("Failed to verify email.");
+    }
+  };
+
+
   const onSubmit = async (data: TeacherFormData) => {
+    if (!emailVerified) {
+      alert("Please verify your email before registering.");
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
+
+      
       
       await registerTeacher(data);
+      
+
       // Navigation is handled in the auth context
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 
@@ -45,6 +109,55 @@ const TeacherRegistration = () => {
     } finally {
       setIsLoading(false);
     }
+
+  };
+
+  const genderOptions = [
+      { value: 'male', label: 'Male' },
+      { value: 'female', label: 'Female' },
+      { value: 'other', label: 'Other' },
+
+  ];
+
+
+  const stateOptions = [
+    { value: "Andhra Pradesh", label: "Andhra Pradesh" },
+    { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
+    { value: "Assam", label: "Assam" },
+    { value: "Bihar", label: "Bihar" },
+    { value: "Chhattisgarh", label: "Chhattisgarh" },
+    { value: "Goa", label: "Goa" },
+    { value: "Gujarat", label: "Gujarat" },
+    { value: "Haryana", label: "Haryana" },
+    { value: "Himachal Pradesh", label: "Himachal Pradesh" },
+    { value: "Jharkhand", label: "Jharkhand" },
+    { value: "Karnataka", label: "Karnataka" },
+    { value: "Kerala", label: "Kerala" },
+    { value: "Madhya Pradesh", label: "Madhya Pradesh" },
+    { value: "Maharashtra", label: "Maharashtra" },
+    { value: "Manipur", label: "Manipur" },
+    { value: "Meghalaya", label: "Meghalaya" },
+    { value: "Mizoram", label: "Mizoram" },
+    { value: "Nagaland", label: "Nagaland" },
+    { value: "Odisha", label: "Odisha" },
+    { value: "Punjab", label: "Punjab" },
+    { value: "Rajasthan", label: "Rajasthan" },
+    { value: "Sikkim", label: "Sikkim" },
+    { value: "Tamil Nadu", label: "Tamil Nadu" },
+    { value: "Telangana", label: "Telangana" },
+    { value: "Tripura", label: "Tripura" },
+    { value: "Uttar Pradesh", label: "Uttar Pradesh" },
+    { value: "Uttarakhand", label: "Uttarakhand" },
+    { value: "West Bengal", label: "West Bengal" },
+  ];
+  
+  const customStyles = {
+    menuList: (base: any) => ({
+      ...base,
+      maxHeight: "120px", // ✅ Limits dropdown height
+      overflowY: "auto", // ✅ Enables scroll
+    }),
+
   };
 
   return (
@@ -68,6 +181,48 @@ const TeacherRegistration = () => {
             placeholder="Enter your full name"
           />
         </div>
+
+        {/* ✅ Email Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <Input
+            {...register('email')}
+            error={errors.email?.message || emailError}
+            placeholder="Enter your email"
+            disabled={emailSent} // ✅ Disable email field after sending code
+          />
+          <button
+            type="button"
+            className="bg-blue-500 text-white py-1 px-3 rounded-md mt-2"
+            onClick={sendVerificationCode}
+            disabled={emailSent} // ✅ Disable button after sending code
+          >
+            {emailSent ? "Code Sent" : "Send Verification Code"}
+          </button>
+        </div>
+
+        {/* ✅ Verification Code Field */}
+        {emailSent && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Verification Code
+            </label>
+            <Input
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              placeholder="Enter verification code"
+            />
+            <button
+              type="button"
+              className="bg-green-500 text-white py-1 px-3 rounded-md mt-2"
+              onClick={verifyCode}
+              disabled={emailVerified} // ✅ Disable once verified
+            >
+              {emailVerified ? "Verified" : "Verify Code"}
+            </button>
+          </div>
+        )}
+
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -97,13 +252,10 @@ const TeacherRegistration = () => {
             Gender
           </label>
           <Select
-            {...register('gender')}
-            error={errors.gender?.message}
-            options={[
-              { value: 'male', label: 'Male' },
-              { value: 'female', label: 'Female' },
-              { value: 'other', label: 'Other' },
-            ]}
+            options={genderOptions}
+            isSearchable={true} // ✅ Allows search
+            styles={customStyles}
+            placeholder="Please select your gender..."
           />
         </div>
 
@@ -112,14 +264,12 @@ const TeacherRegistration = () => {
             State
           </label>
           <Select
-            {...register('state')}
-            error={errors.state?.message}
-            options={[
-              { value: 'CA', label: 'California' },
-              { value: 'NY', label: 'New York' },
-              { value: 'TX', label: 'Texas' },
-            ]}
+            options={stateOptions}
+            isSearchable={true} // ✅ Allows search
+            styles={customStyles}
+            placeholder="Select a state..."
           />
+
         </div>
 
         <div>
@@ -133,17 +283,27 @@ const TeacherRegistration = () => {
           />
         </div>
 
-        <div>
+         {/* PIN Input with Show/Hide Password Icon */}
+         <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             4-Digit PIN
           </label>
-          <Input
-            {...register('pin')}
-            error={errors.pin?.message}
-            type="password"
-            placeholder="Enter 4-digit PIN"
-            maxLength={4}
-          />
+          <div className="relative">
+            <Input
+              {...register('pin')}
+              error={errors.pin?.message}
+              type={showPin ? "text" : "password"}
+              placeholder="Enter 4-digit PIN"
+              maxLength={4}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPin(!showPin)}
+              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+            >
+              {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         <button

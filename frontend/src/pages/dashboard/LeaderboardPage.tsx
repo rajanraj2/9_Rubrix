@@ -5,6 +5,9 @@ import Sidebar from '../../components/dashboard/Sidebar';
 import SubmissionDetail from '../../components/dashboard/SubmissionDetail';
 import { hackathonAPI, submissionAPI } from '../../lib/api';
 
+import { set } from 'react-hook-form';
+
+
 interface SubmissionParams {
   [key: string]: number;
 }
@@ -83,6 +86,7 @@ interface Submission {
     schoolName?: string;
   };
   submissionText?: string;
+
   files?: Array<{
     filename: string;
     path: string;
@@ -143,6 +147,7 @@ interface LeaderboardItem {
   };
 }
 
+
 const ITEMS_PER_PAGE = 10;
 
 const LeaderboardPage: React.FC = () => {
@@ -151,18 +156,25 @@ const LeaderboardPage: React.FC = () => {
   console.log(`Loading leaderboard for hackathon: ${hackathonId}`);
   
   const [currentPage, setCurrentPage] = useState(1);
+
   const [isLoading, setIsLoading] = useState(true);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [originalSubmissions, setOriginalSubmissions] = useState<Submission[]>([]);
+
   const [displayedSubmissions, setDisplayedSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'overallScore', direction: 'descending' });
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string >();
+  const [sortConfig, setSortConfig] = useState({ key: 'totalScore', direction: 'descending' });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDemographicFilterOpen, setIsDemographicFilterOpen] = useState(false);
   const [filterParam, setFilterParam] = useState<string | null>(null);
   const [filterMin, setFilterMin] = useState(0);
   const [filterMax, setFilterMax] = useState(100);
+
+  const [evaluationParams, setEvaluationParams] = useState<string[]>([]);
+
   const [hackathon, setHackathon] = useState<HackathonData | null>(null);
+
   const [demographicFilter, setDemographicFilter] = useState<{
     state: string;
     district: string;
@@ -177,155 +189,73 @@ const LeaderboardPage: React.FC = () => {
     school: ''
   });
   
-  // Load hackathon parameters and submissions data
+
+
+
   useEffect(() => {
-    const fetchHackathonData = async () => {
+    const fetchLeaderboard = async () => {
       if (!hackathonId) return;
-      
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        console.log(`Starting to fetch data for hackathon: ${hackathonId}`);
-        
-        // Fetch hackathon details to get parameters
-        const hackathonResponse = await hackathonAPI.getHackathon(hackathonId);
-        console.log('Hackathon details response:', hackathonResponse);
-        setHackathon(hackathonResponse.data.data);
-        
-        // Fetch leaderboard data
-        const leaderboardResponse = await hackathonAPI.getLeaderboard(hackathonId);
-        console.log('Leaderboard full response:', leaderboardResponse);
-        
-        if (leaderboardResponse.data && leaderboardResponse.data.data && Array.isArray(leaderboardResponse.data.data)) {
-          console.log('Number of submissions received:', leaderboardResponse.data.data.length);
+        const response = await hackathonAPI.getLeaderboard(hackathonId);
+        if (response.data.success) {
+          const fetchedSubmissions: Submission[] = response.data.data;
+          const hackathon = await hackathonAPI.getHackathon(hackathonId);
+          console.log("Fetched leaderboard data:", fetchedSubmissions);
+          const parameters = hackathon.data.data.parameters.map((param: any) => param.name);
+          setEvaluationParams(parameters);
           
-          // Transform the data to match our Submission interface
-          const submissionsData = leaderboardResponse.data.data.map((item: SubmissionResponse) => {
-            // Extract parameter scores from the submission's evaluation
-            const parameters: SubmissionParams = {};
-            
-            if (item.evaluation && Array.isArray(item.evaluation)) {
-              item.evaluation.forEach((evaluation) => {
-                parameters[evaluation.parameterName] = evaluation.score;
-              });
-            }
-            
-            return {
-              id: item._id,
-              _id: item._id,
-              studentName: item.userId?.fullName || 'Unknown Student',
-              submissionTitle: item.submissionText?.substring(0, 50) || 'Untitled Submission',
-              submissionDate: item.submittedAt,
-              overallScore: item.totalScore || 0,
-              parameters,
-              isShortlisted: item.isShortlisted || false,
-              userId: item.userId || {},
-              submissionText: item.submissionText,
-              files: item.files,
-              evaluation: item.evaluation,
-              feedback: item.feedback,
-              summary_feedback: item.summary_feedback
-            };
-          });
-          
-          console.log('Transformed submissions data:', submissionsData);
-          
-          if (submissionsData.length > 0) {
-            setSubmissions(submissionsData);
-            setOriginalSubmissions(submissionsData);
-            
-            // Initial sort by overall score
-            const sortedSubmissions = [...submissionsData].sort((a, b) => b.overallScore - a.overallScore);
-            setSubmissions(sortedSubmissions);
-          } else {
-            console.warn('No submissions found after transformation');
-            // Try fallback
-            tryFallbackSubmissions();
-          }
-        } else {
-          console.warn('Leaderboard data is missing or in unexpected format:', leaderboardResponse.data);
-          // Try fallback
-          tryFallbackSubmissions();
+          fetchedSubmissions.sort((a, b) => b.totalScore - a.totalScore);
+          setSubmissions(fetchedSubmissions);
+          setDisplayedSubmissions(fetchedSubmissions.slice(0, ITEMS_PER_PAGE));
         }
       } catch (error) {
-        console.error('Error fetching hackathon data:', error);
-        // Try fallback
-        tryFallbackSubmissions();
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching leaderboard:", error);
       }
+      setIsLoading(false);
     };
     
-    const tryFallbackSubmissions = async () => {
-      console.log('Trying to fetch submissions directly as fallback');
-      try {
-        const submissionsResponse = await hackathonAPI.getSubmissions(hackathonId);
-        console.log('Submissions fallback response:', submissionsResponse);
-        
-        if (submissionsResponse.data && 
-            submissionsResponse.data.data && 
-            Array.isArray(submissionsResponse.data.data) && 
-            submissionsResponse.data.data.length > 0) {
-          
-          // Transform the data to match our Submission interface
-          const fallbackSubmissions = submissionsResponse.data.data.map((item: SubmissionResponse) => {
-            // Extract parameter scores from the submission's evaluation
-            const parameters: SubmissionParams = {};
-            
-            if (item.evaluation && Array.isArray(item.evaluation)) {
-              item.evaluation.forEach((evaluation) => {
-                parameters[evaluation.parameterName] = evaluation.score;
-              });
-            }
-            
-            return {
-              id: item._id,
-              _id: item._id,
-              studentName: item.userId?.fullName || 'Unknown Student',
-              submissionTitle: item.submissionText?.substring(0, 50) || 'Untitled Submission',
-              submissionDate: item.submittedAt,
-              overallScore: item.totalScore || 0,
-              parameters,
-              isShortlisted: item.isShortlisted || false,
-              userId: item.userId || {},
-              submissionText: item.submissionText,
-              files: item.files,
-              evaluation: item.evaluation,
-              feedback: item.feedback,
-              summary_feedback: item.summary_feedback
-            };
-          });
-          
-          console.log('Fallback submissions data:', fallbackSubmissions);
-          
-          if (fallbackSubmissions.length > 0) {
-            setSubmissions(fallbackSubmissions);
-            setOriginalSubmissions(fallbackSubmissions);
-            
-            // Initial sort by overall score
-            const sortedSubmissions = [...fallbackSubmissions].sort((a, b) => b.overallScore - a.overallScore);
-            setSubmissions(sortedSubmissions);
-          } else {
-            console.warn('No submissions found from fallback either');
-          }
-        } else {
-          console.warn('Submissions fallback data is missing or in unexpected format:', submissionsResponse.data);
-        }
-      } catch (fallbackError) {
-        console.error('Error fetching fallback submissions:', fallbackError);
-      }
-    };
-    
-    fetchHackathonData();
+    fetchLeaderboard();
   }, [hackathonId]);
+
+  // const selectedSubmission = submissions.find(s => s.id === selectedSubmission);
+
+  
+
+  const handleSelectSubmission = (submissionId?: string) => {
+    setSelectedSubmissionId(submissionId);
+    setSelectedSubmission(hackathonId ?? null); // ✅ Ensure it never gets undefined
+  };
+
+  // Toggle shortlist
+  const toggleShortlist = async (submissionId: string) => {
+    setSubmissions(prevSubmissions =>
+      prevSubmissions.map(submission =>
+        submission.id === submissionId
+          ? { ...submission, isShortlisted: !submission.isShortlisted }
+          : submission
+          
+      )
+    );
+    
+  };
+
 
   // Load more submissions when scrolling or changing page
   useEffect(() => {
     setIsLoading(true);
-    // Calculate displayed submissions based on current page
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    setDisplayedSubmissions(submissions.slice(0, endIndex));
-    setIsLoading(false);
+
+    // Simulate API call delay
+    const timer = setTimeout(() => {
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      setDisplayedSubmissions(submissions.slice(0, endIndex));
+      console.log(`Displaying submissions:`, displayedSubmissions);
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+
   }, [currentPage, submissions]);
 
   // Handle sort functionality
@@ -340,10 +270,13 @@ const LeaderboardPage: React.FC = () => {
       if (key.includes('.')) {
         const [parentKey, childKey] = key.split('.');
         if (parentKey === 'parameters' && childKey) {
-          const aValue = a.parameters[childKey] || 0;
-          const bValue = b.parameters[childKey] || 0;
+
+          const aValue = a.parameters?.[childKey] ?? 0; // Default to 0 if undefined
+          const bValue = b.parameters?.[childKey] ?? 0; // Default to 0 if undefined
+
           return direction === 'ascending' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
         }
+        
         return 0;
       }
 
@@ -389,24 +322,22 @@ const LeaderboardPage: React.FC = () => {
       }
 
       // Handle non-nested keys
-      if (key === 'overallScore') {
+      if (key === 'totalScore') {
         return direction === 'ascending' 
-          ? a.overallScore - b.overallScore 
-          : b.overallScore - a.overallScore;
-      } else if (key === 'submissionDate') {
-        const aDate = new Date(a.submissionDate).getTime();
-        const bDate = new Date(b.submissionDate).getTime();
+          ? a.totalScore - b.totalScore 
+          : b.totalScore - a.totalScore;
+      } else if (key === 'submittedAt') {
+        const aDate = new Date(a.submittedAt).getTime();
+        const bDate = new Date(b.submittedAt).getTime();
         return direction === 'ascending' 
           ? aDate - bDate 
           : bDate - aDate;
-      } else if (key === 'submissionTitle') {
+      } else if (key === 'submissionText') {
         return direction === 'ascending'
-          ? a.submissionTitle.localeCompare(b.submissionTitle)
-          : b.submissionTitle.localeCompare(a.submissionTitle);
-      } else if (key === 'studentName') {
-        return direction === 'ascending'
-          ? a.studentName.localeCompare(b.studentName)
-          : b.studentName.localeCompare(a.studentName);
+
+          ? a.submittedAt.localeCompare(b.submittedAt)
+          : b.submittedAt.localeCompare(a.submittedAt);
+
       }
       
       return 0;
@@ -421,16 +352,19 @@ const LeaderboardPage: React.FC = () => {
   const applyFilter = () => {
     if (!filterParam) return;
 
-    const filtered = [...originalSubmissions].filter(submission => {
-      if (filterParam === 'overallScore') {
-        return submission.overallScore >= filterMin && submission.overallScore <= filterMax;
+
+    const filtered = submissions.filter(submission => {
+      if (filterParam === 'totalScore') {
+        return submission.totalScore >= filterMin && submission.totalScore <= filterMax;
+
       }
       
       if (filterParam.includes('.')) {
         const [parent, child] = filterParam.split('.');
-        if (parent === 'parameters' && child && child in submission.parameters) {
+        if (parent === 'parameters' && child && submission.parameters?.[child] !== undefined) {
           return submission.parameters[child] >= filterMin && submission.parameters[child] <= filterMax;
         }
+        
       }
       
       return true;
@@ -440,6 +374,7 @@ const LeaderboardPage: React.FC = () => {
     setCurrentPage(1);
     setIsFilterOpen(false);
   };
+
 
   // Apply demographic filters
   const applyDemographicFilter = () => {
@@ -488,6 +423,7 @@ const LeaderboardPage: React.FC = () => {
   // Reset filters
   const resetFilters = () => {
     setSubmissions(originalSubmissions);
+
     setFilterParam(null);
     setFilterMin(0);
     setFilterMax(100);
@@ -525,12 +461,15 @@ const LeaderboardPage: React.FC = () => {
     }
   };
 
+
   // Load more submissions
   const loadMore = () => {
     if (currentPage * ITEMS_PER_PAGE < submissions.length) {
       setCurrentPage(prev => prev + 1);
     }
   };
+
+
 
   // Sort indicator
   const getSortIndicator = (key: string) => {
@@ -558,19 +497,38 @@ const LeaderboardPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow p-4 mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">Submissions</h2>
-                <div className="flex space-x-2">
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsDemographicFilterOpen(!isDemographicFilterOpen)}
-                      className="flex items-center space-x-2 px-3 py-2 border rounded-md hover:bg-gray-50"
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>Demographics</span>
-                    </button>
-                    
-                    {isDemographicFilterOpen && (
-                      <div className="absolute right-0 mt-2 w-72 bg-white shadow-lg rounded-md p-4 z-10 border">
-                        <div className="space-y-3">
+
+                <div className="relative">
+                  <button
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className="flex items-center space-x-2 px-3 py-2 border rounded-md hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Filter</span>
+                  </button>
+                  
+                  {isFilterOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md p-4 z-10 border">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Parameter</label>
+                          <select
+                            value={filterParam || ''}
+                            onChange={(e) => setFilterParam(e.target.value || null)}
+                            className="mt-1 block w-full border rounded-md px-3 py-2 text-sm"
+                          >
+                            <option value="">Select parameter</option>
+                            <option value="totalScore">Overall Score</option>
+                            {evaluationParams.map((param) => (
+                              <option key={param} value={`parameters.${param}`}>
+                                {param.charAt(0).toUpperCase() + param.slice(1)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                             <div className="flex items-center">
@@ -764,31 +722,31 @@ const LeaderboardPage: React.FC = () => {
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('submissionTitle')}
+                        onClick={() => handleSort('submissionText')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Submission</span>
-                          {getSortIndicator('submissionTitle')}
+                          {getSortIndicator('submissionText')}
                         </div>
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('submissionDate')}
+                        onClick={() => handleSort('submittedAt')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Date</span>
-                          {getSortIndicator('submissionDate')}
+                          {getSortIndicator('submittedAt')}
                         </div>
                       </th>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => handleSort('overallScore')}
+                        onClick={() => handleSort('totalScore')}
                       >
                         <div className="flex items-center space-x-1">
                           <span>Score</span>
-                          {getSortIndicator('overallScore')}
+                          {getSortIndicator('totalScore')}
                         </div>
                       </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -797,18 +755,42 @@ const LeaderboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-4">
-                          <div className="flex justify-center">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
-                          </div>
+
+                    {displayedSubmissions.map((submission, index) => (
+                      <tr key={submission.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {index + 1}
                         </td>
-                      </tr>
-                    ) : displayedSubmissions.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center py-4 text-gray-500">
-                          No submissions found
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {submission.userId?.fullName || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {submission.submissionText}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(submission.submittedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {submission.totalScore}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                          <button
+                            onClick={() => submission?.id && toggleShortlist(submission.id)}
+
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <Star className={`w-5 h-5 ${submission.isShortlisted ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                          </button>
+                          <button
+                            // onClick={() => setSelectedSubmission(submission)}
+                            onClick = {() => handleSelectSubmission(submission.id)}
+
+                            // onClick={() => setSelectedSubmission(submission?.id && selectedSubmission === submission.id ? null : submission.id )}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+
                         </td>
                       </tr>
                     ) : (
@@ -871,15 +853,17 @@ const LeaderboardPage: React.FC = () => {
             </div>
           </div>
           
+
           {selectedSubmission && (
-            <div className="lg:w-1/4 bg-white rounded-lg shadow">
-              <SubmissionDetail
-                submission={submissions.find(s => s.id === selectedSubmission)!}
-                onClose={() => setSelectedSubmission(null)}
-                fullSubmission
-              />
-            </div>
+
+            <SubmissionDetail
+              submissionId={selectedSubmissionId } // Ensure correct ID is passed
+              hackathonId={hackathonId} // Pass the hackathon ID for evaluation fetching
+              onClose={() => setSelectedSubmission(null)}
+            />
+
           )}
+
         </div>
       </main>
     </div>

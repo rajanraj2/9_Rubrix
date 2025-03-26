@@ -278,8 +278,10 @@ exports.getHackathon = async (req, res) => {
       success: true,
       data: hackathonWithCounts,
     });
+
+    console.log("hackathonWithCounts: ", hackathonWithCounts);
   } catch (error) {
-    console.log("hello2")
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -503,34 +505,49 @@ exports.getParticipants = async (req, res) => {
 // Get hackathon leaderboard
 exports.getLeaderboard = async (req, res) => {
   try {
-    const hackathonId = req.params.id;
+
+    const hackathonId =req.params.id;
     
     // Check if hackathon exists
-    const hackathon = await Hackathon.findById(hackathonId);
+    const hackathon = await Hackathon.findById(hackathonId).select('parameters');
     if (!hackathon) {
+
+
       return res.status(404).json({
         success: false,
         message: 'Hackathon not found',
       });
     }
 
+
     // Get submissions with score, sorted by totalScore
     const submissions = await Submission.find({ hackathonId })
       .sort({ totalScore: -1 })
       .populate({
         path: 'userId',
-        select: 'fullName state district grade gender schoolName',
+
+        select: 'fullName state district grade schoolName',
       });
 
-    console.log(`Returning ${submissions.length} submissions for hackathon ${hackathonId}`);
-    
+
+      const leaderboard = submissions.map(submission => ({
+        ...submission,
+        parameters: hackathon.parameters, // Attach parameters dynamically
+    }));
+
+    // Sort leaderboard by totalScore in descending order
+    leaderboard.sort((a, b) => b.totalScore - a.totalScore);
+
+    // res.status(200).json({ success: true, data: leaderboard });
+
     res.status(200).json({
       success: true,
-      count: submissions.length,
+      count: hackathon.length,
       data: submissions,
     });
+    console.log("res data: ", submissions);
   } catch (error) {
-    console.error('Error in getLeaderboard:', error);
+
     res.status(500).json({
       success: false,
       message: error.message,

@@ -5,15 +5,17 @@ import { authAPI } from './api';
 interface User {
   id: string;
   fullName: string;
-  phoneNumber: string;
-  role: 'student' | 'teacher';
+  email: string;
+  role: 'student' | 'teacher' | 'pending';
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  login: (phoneNumber: string, pin: string, role: 'student' | 'teacher') => Promise<void>;
+
+  login: (email: string, role: 'student' | 'teacher' | 'pending', pin: string) => Promise<void>;
+
   registerStudent: (data: any) => Promise<void>;
   registerTeacher: (data: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -56,14 +58,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   // Login function
-  const login = async (phoneNumber: string, pin: string, role: 'student' | 'teacher') => {
+
+  const login = async (email: string,role: 'student' | 'teacher' | 'pending',  pin: string ) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authAPI.login({ phoneNumber, pin, role });
+      const response = await authAPI.login({ email, role,  pin });
       setUser(response.data.user);
       
       // Redirect to appropriate dashboard
+      console.log("role in authcontext: " ,response.data.user.role);
+
       if (response.data.user.role === 'student') {
         navigate('/dashboard/student');
       } else {

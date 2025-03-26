@@ -23,9 +23,9 @@ interface TeacherRegistrationData {
 }
 
 interface LoginData {
-  phoneNumber: string;
+  email: string;
+  role: 'student' | 'teacher'| 'pending';
   pin: string;
-  role: 'student' | 'teacher';
 }
 
 interface HackathonData {
@@ -100,28 +100,16 @@ export const hackathonAPI = {
     api.post(`/hackathons/${hackathonId}/participants`, { userId }),
   getParticipants: (hackathonId: string) => 
     api.get(`/hackathons/${hackathonId}/participants`),
-  getLeaderboard: (hackathonId: string) => {
-    console.log(`Fetching leaderboard for hackathon: ${hackathonId}`);
-    return api.get(`/hackathons/${hackathonId}/leaderboard`).then(response => {
-      console.log('Leaderboard API response:', response);
-      return response;
-    }).catch(error => {
-      console.error('Leaderboard API error:', error);
-      throw error;
-    });
-  },
+
+  getLeaderboard: (hackathonId: string) => 
+    api.get(`/hackathons/${hackathonId}/leaderboard`),
   getSubmissions: (hackathonId: string) => 
     api.get(`/hackathons/${hackathonId}/submissions`),
-  getShortlisted: (hackathonId: string) => {
-    console.log(`Fetching shortlisted for hackathon: ${hackathonId}`);
-    return api.get(`/hackathons/${hackathonId}/shortlisted`).then(response => {
-      console.log('Shortlisted API response:', response);
-      return response;
-    }).catch(error => {
-      console.error('Shortlisted API error:', error);
-      throw error;
-    });
-  },
+  getShortlisted: (hackathonId: string) => 
+    api.get(`/hackathons/${hackathonId}/shortlisted`),
+  removeShortlisted: (submissionId: string) =>
+    api.post(`/hackathons/remove-shortlisted/${submissionId}`),
+
 };
 
 // Submission API calls
