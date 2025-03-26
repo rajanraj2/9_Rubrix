@@ -1,0 +1,39 @@
+# Node.js dependencies and build files
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Python virtual environments
+**/venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Environment variables
+**/.env
+
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+**/Dockerfile
+docker-compose.yml
+
+# Temporary files
+**/temp
+**/tmp
+**/.DS_Store
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build directories
+**/dist
+**/build 

@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5001
+    depends_on:
+      - backend
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=5001
+      - MONGODB_URI=mongodb://mongodb:27017/pijam
+      - FRONTEND_URL=http://localhost:5173
+      - REDIS_URL=redis://redis:6379
+      - WORKER_API_URL=http://worker:5002
+    depends_on:
+      - redis
+      - mongodb
+      - micro
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./worker
+    env_file:
+      - ./worker/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - FASTAPI_URL=http://micro:8000
+      - BACKEND_URL=http://backend:5001
+    depends_on:
+      - redis
+      - backend
+      - micro
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+  micro:
+    build:
+      context: ./micro
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./micro/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/pijam
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    depends_on:
+      - mongodb
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - pijam-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mongodb-data:
+
+networks:
+  pijam-network:
+    driver: bridge 
