@@ -14,10 +14,13 @@ import HackathonSubmission from './pages/dashboard/HackathonSubmission';
 import CreateHackathon from './pages/dashboard/CreateHackathon';
 import LeaderboardPage from './pages/dashboard/LeaderboardPage';
 import ShortlistedPage from './pages/dashboard/ShortlistedPage';
+
 import Navbar from './components/Navbar';
 import AdminLogin from './pages/auth/AdminLogin';
 import ProtectedAdminRoute from './pages/utils/ProtectedAdminRoute';
 import AdminDashboard from './pages/dashboard/AdminDashBoard';
+import SubmissionViewPage from './pages/dashboard/SubmissionViewPage';
+
 
 // Protected route component
 const ProtectedRoute = ({ role }: { role?: 'student' | 'teacher' }) => {
@@ -50,11 +53,13 @@ const AppWithAuth = () => {
           <Route path="/register/student" element={<StudentRegistration />} />
           <Route path="/register/teacher" element={<TeacherRegistration />} />
         </Route>
+
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route element={<ProtectedAdminRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Route>
+
 
         {/* Student Routes */}
         <Route element={<ProtectedRoute role="student" />}>
@@ -70,6 +75,9 @@ const AppWithAuth = () => {
           <Route path="/dashboard/teacher/hackathon/:hackathonId" element={<HackathonDetails />} />
           <Route path="/dashboard/teacher/hackathon/:hackathonId/leaderboard" element={<LeaderboardPage />} />
           <Route path="/dashboard/teacher/hackathon/:hackathonId/shortlisted" element={<ShortlistedPage />} />
+
+          <Route path="/dashboard/teacher/submission/:submissionId" element={<SubmissionViewPage />} />
+
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

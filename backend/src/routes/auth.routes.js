@@ -11,10 +11,12 @@ const {pendingTeacherApproval} = require('../middleware/pendingApprovalMiddlewar
 const { verifyAuthCode, sendAuthCode } = require("../controllers/emailServiceController");
 const {isApprovedTeacher} = require("../middleware/isApprovedTeacher");
 
+
 const router = express.Router();
 
 // Public routes
 router.post('/register/student', registerStudent);
+
 router.post('/register/teacher', pendingTeacherApproval);
 
 router.post('/login', login);

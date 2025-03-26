@@ -13,7 +13,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+
   login: (email: string, role: 'student' | 'teacher' | 'pending', pin: string) => Promise<void>;
+
   registerStudent: (data: any) => Promise<void>;
   registerTeacher: (data: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   // Login function
+
   const login = async (email: string,role: 'student' | 'teacher' | 'pending',  pin: string ) => {
     try {
       setLoading(true);
@@ -65,6 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Redirect to appropriate dashboard
       console.log("role in authcontext: " ,response.data.user.role);
+
       if (response.data.user.role === 'student') {
         navigate('/dashboard/student');
       } else {

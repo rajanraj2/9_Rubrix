@@ -100,6 +100,7 @@ export const hackathonAPI = {
     api.post(`/hackathons/${hackathonId}/participants`, { userId }),
   getParticipants: (hackathonId: string) => 
     api.get(`/hackathons/${hackathonId}/participants`),
+
   getLeaderboard: (hackathonId: string) => 
     api.get(`/hackathons/${hackathonId}/leaderboard`),
   getSubmissions: (hackathonId: string) => 
@@ -108,6 +109,7 @@ export const hackathonAPI = {
     api.get(`/hackathons/${hackathonId}/shortlisted`),
   removeShortlisted: (submissionId: string) =>
     api.post(`/hackathons/remove-shortlisted/${submissionId}`),
+
 };
 
 // Submission API calls

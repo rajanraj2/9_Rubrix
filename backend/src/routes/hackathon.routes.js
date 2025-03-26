@@ -16,6 +16,7 @@ const {
   getSubmissions,
   getShortlisted,
   removeShortlisted
+
 } = require('../controllers/submission.controller');
 const { protect, authorize } = require('../middleware/auth.middleware');
 
@@ -41,6 +42,8 @@ router.post('/:id/collaborators', authorize('teacher'), addCollaborators);
 router.get('/:id/participants', authorize('teacher'), getParticipants);
 router.get('/:id/submissions', authorize('teacher'), getSubmissions);
 router.get('/:id/shortlisted', authorize('teacher'), getShortlisted);
+
 router.post('/hackathons/remove-shortlisted/:id', removeShortlisted)
+
 
 module.exports = router; 

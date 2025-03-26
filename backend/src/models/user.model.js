@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide your full name'],
     trim: true,
   },
+
   email: {
     type: String,
     required: function() { return this.role === 'teacher'; },
@@ -25,9 +26,11 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
+
     enum: ['student', 'teacher', 'pending', 'admin', 'superadmin'],
     default: 'student',
     required: [true, 'Please provide your role'],
+    
   },
   // Student specific fields
   schoolCollegeName: {

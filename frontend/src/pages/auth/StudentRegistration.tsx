@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import { Eye, EyeOff } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import Select from 'react-select';
+
 import { useAuth } from '../../lib/authContext';
 
 const studentSchema = z.object({
@@ -41,8 +43,10 @@ const StudentRegistration = () => {
       setError(null);
       
       await registerStudent(data);
+
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : authError || 'Registration failed. Please try again.';
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -141,6 +145,17 @@ const customStyles = {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            School/College Name
+          </label>
+          <Input
+            {...register('schoolCollegeName')}
+            error={errors.schoolCollegeName?.message}
+            placeholder="Enter your school or college name"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             State
           </label>
           <Select
@@ -209,6 +224,7 @@ const customStyles = {
 
         <button
           type="submit"
+
           className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors ${
             isLoading ? 'opacity-70 cursor-not-allowed' : ''
           }`}

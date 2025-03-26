@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { X } from 'lucide-react';
 import axios from 'axios';
 import { submissionAPI } from '../../lib/api';
@@ -6,8 +7,11 @@ import { submissionAPI } from '../../lib/api';
 interface SubmissionDetailProps {
   submissionId: string | undefined;
   hackathonId: string | undefined;
+
   onClose: () => void;
+  fullSubmission?: boolean;
 }
+
 
 // Submission Interface (From Node.js Backend)
 interface Submission {
@@ -85,11 +89,25 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
   if (isLoading) return <div className="p-6 text-gray-600">Loading submission details...</div>;
   if (!submission) return <div className="p-6 text-gray-600">No submission found.</div>;
 
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'bg-green-500';
     if (score >= 60) return 'bg-yellow-500';
     if (score >= 40) return 'bg-orange-500';
     return 'bg-red-500';
+  };
+
+  // Get the actual submission content - either from summary_feedback or real text
+  const getSubmissionContent = () => {
+    if (submission.submissionText) {
+      return submission.submissionText;
+    }
+    
+    if (submission.summary_feedback?.summary) {
+      return submission.summary_feedback.summary;
+    }
+    
+    return "This project description is not available.";
   };
 
   return (
@@ -122,6 +140,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
         {/* Preview Tab */}
         {activeTab === 'preview' && (
           <div className="space-y-4">
+
             <h4 className="text-sm font-medium text-gray-500">Project Title</h4>
             <p className="text-base font-medium">{submission.submissionTitle}</p>
 
@@ -139,12 +158,14 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
             <a href={submission.repositoryUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
               {submission.repositoryUrl || 'No repository link provided'}
             </a>
+
           </div>
         )}
 
         {/* Summary Tab */}
         {activeTab === 'summary' && (
           <div className="space-y-4">
+
             <h4 className="text-sm font-medium text-gray-500">Approach</h4>
             <p className="text-sm">{submission.approach || 'Approach details not available.'}</p>
 
@@ -153,14 +174,48 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
 
             <h4 className="text-sm font-medium text-gray-500">Learnings</h4>
             <p className="text-sm">{submission.learnings || 'No learnings shared.'}</p>
+
           </div>
         )}
 
         {/* Feedback Tab */}
         {activeTab === 'feedback' && evaluation && (
           <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-500">Teacher's Feedback</h4>
-            <p className="text-sm">{evaluation.summary_feedback.feedback || "No feedback available."}</p>
+
+            <div className="flex justify-between items-start">
+              <h4 className="text-sm font-medium text-gray-500">Teacher's Feedback</h4>
+              {!isEditingFeedback ? (
+                <button
+                  onClick={() => setIsEditingFeedback(true)}
+                  className="text-indigo-600 hover:text-indigo-800"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveFeedback}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  <Save className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            
+            {!isEditingFeedback ? (
+              feedback ? (
+                <p className="text-sm whitespace-pre-line">{feedback}</p>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No feedback provided yet.</p>
+              )
+            ) : (
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                className="w-full h-32 p-2 border rounded-md text-sm"
+                placeholder="Provide feedback..."
+              />
+            )}
+
           </div>
         )}
       </div>
@@ -184,13 +239,16 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({ submissionId, hacka
             {/* Overall Score */}
             <div>
               <div className="flex justify-between mb-1">
+
                 <span className="text-xs font-medium text-gray-700">Overall</span>
                 <span className="text-xs font-medium text-gray-700">{evaluation.overall_score}/100</span>
+
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className={`${getScoreColor(evaluation.overall_score)} h-2 rounded-full`} style={{ width: `${evaluation.overall_score}%` }}></div>
               </div>
             </div>
+
           </div>
         </div>
       )}

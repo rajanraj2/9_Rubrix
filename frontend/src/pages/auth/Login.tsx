@@ -34,7 +34,9 @@ const Login = () => {
       setIsLoading(true);
       setError(null);
 
+
       await login(data.email, data.role,  data.pin,);
+
       // Navigation is handled in the auth context
     } catch (err: any) {
       setError(err.response?.data?.message || authError || 'Login failed. Please try again.');

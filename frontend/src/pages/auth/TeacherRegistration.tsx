@@ -3,11 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../../components/ui/Input';
+
 import { Eye, EyeOff } from 'lucide-react';
 // import Select from '../../components/ui/Select';
 import Select from 'react-select';
 import { useAuth } from '../../lib/authContext';
 import axios from 'axios';
+
 
 const teacherSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -26,13 +28,14 @@ const TeacherRegistration = () => {
   const { registerTeacher, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [showPin, setShowPin] = useState(false); 
   const [emailSent, setEmailSent] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
 
-  
+
   
   const {
     register,
@@ -42,6 +45,7 @@ const TeacherRegistration = () => {
   } = useForm<TeacherFormData>({
     resolver: zodResolver(teacherSchema),
   });
+
 
   // ✅ Send Verification Code to Email
   const sendVerificationCode = async () => {
@@ -96,6 +100,7 @@ const TeacherRegistration = () => {
       
       await registerTeacher(data);
       
+
       // Navigation is handled in the auth context
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 
@@ -104,6 +109,7 @@ const TeacherRegistration = () => {
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const genderOptions = [
@@ -151,6 +157,7 @@ const TeacherRegistration = () => {
       maxHeight: "120px", // ✅ Limits dropdown height
       overflowY: "auto", // ✅ Enables scroll
     }),
+
   };
 
   return (

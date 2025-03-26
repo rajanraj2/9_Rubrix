@@ -146,7 +146,6 @@ exports.login = async (req, res) => {
     if(user.role === 'pending') {
         return res.status(403).json({ message: "Your registration is pending for approval from Admin." });
     }
-
     const isMatch = await user.comparePin(pin);
     if (!isMatch) {
       return res.status(401).json({
@@ -154,7 +153,6 @@ exports.login = async (req, res) => {
         message: 'Invalid credentials',
       });
     }
-    
 
     // Send token response with cookie
     sendTokenResponse(user, 200, res);

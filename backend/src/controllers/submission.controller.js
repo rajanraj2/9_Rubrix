@@ -175,15 +175,18 @@ exports.getSubmissions = async (req, res) => {
     const submissions = await Submission.find({ hackathonId })
       .populate({
         path: 'userId',
-        select: 'fullName phoneNumber state district grade gender',
+
+        select: 'fullName phoneNumber state district grade gender schoolName',
       });
     
+
     res.status(200).json({
       success: true,
       count: submissions.length,
       data: submissions,
     });
   } catch (error) {
+    
     res.status(500).json({
       success: false,
       message: error.message,
@@ -365,21 +368,24 @@ exports.getShortlisted = async (req, res) => {
       isShortlisted: true,
     }).populate({
       path: 'userId',
-      select: 'fullName phoneNumber state district grade gender',
+
+      select: 'fullName phoneNumber state district grade gender schoolName',
     });
-    
+
     res.status(200).json({
       success: true,
       count: submissions.length,
       data: submissions,
     });
   } catch (error) {
+
     res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
 exports.removeShortlisted = async (req, res) => {
   try {
     const { submissionId } = req.body;

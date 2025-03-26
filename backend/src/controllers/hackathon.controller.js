@@ -278,15 +278,16 @@ exports.getHackathon = async (req, res) => {
       success: true,
       data: hackathonWithCounts,
     });
+
     console.log("hackathonWithCounts: ", hackathonWithCounts);
   } catch (error) {
+
     res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
-
 
 // Update hackathon
 exports.updateHackathon = async (req, res) => {
@@ -504,25 +505,28 @@ exports.getParticipants = async (req, res) => {
 // Get hackathon leaderboard
 exports.getLeaderboard = async (req, res) => {
   try {
+
     const hackathonId =req.params.id;
     
     // Check if hackathon exists
     const hackathon = await Hackathon.findById(hackathonId).select('parameters');
     if (!hackathon) {
-      console.log("hackathon not found");
+
+
       return res.status(404).json({
         success: false,
         message: 'Hackathon not found',
       });
     }
-    
+
 
     // Get submissions with score, sorted by totalScore
     const submissions = await Submission.find({ hackathonId })
       .sort({ totalScore: -1 })
       .populate({
         path: 'userId',
-        select: 'fullName state district grade',
+
+        select: 'fullName state district grade schoolName',
       });
 
 
@@ -543,6 +547,7 @@ exports.getLeaderboard = async (req, res) => {
     });
     console.log("res data: ", submissions);
   } catch (error) {
+
     res.status(500).json({
       success: false,
       message: error.message,

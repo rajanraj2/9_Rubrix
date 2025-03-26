@@ -51,7 +51,7 @@ const submissionSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  
+
   evaluation: [evaluationSchema],
   totalScore: {
     type: Number,
