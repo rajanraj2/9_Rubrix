@@ -17,7 +17,9 @@ class GeneralEvaluationRequest(BaseModel):
     criteria: str
     submission: str
 
-@router.post("/evaluate", summary="Evaluate using LangChain and transformer model (e.g., FLAN-T5, LLMs)", description="Evaluate a student submission based on a set of criteria using LangChain and any LLM")
+langchain_desc = "Evaluate a student submission based on a set of criteria using LangChain and any LLM. The submission can be evaluated on any specified criteria, and it will be scored on a scale of 1 to 5, depending on how well it meets the given requirements."
+
+@router.post("/evaluate", summary="Evaluate using LangChain and transformer model (e.g., FLAN-T5, LLMs)", description=langchain_desc)
 def evaluate_general(request: GeneralEvaluationRequest):
     try:
         result = evaluate_solution(
@@ -34,7 +36,9 @@ class SimilarityRequest(BaseModel):
     ideal_solution: str
     student_submission: str
 
-@router.post("/evaluate/similarity/", summary="Evalulate similarity", description="Compute cosine similarity between ideal solution and student submission")
+similarity_desc = "Compute cosine similarity between the ideal solution and the student submission. The system generates a similarity score out of 100, indicating how closely the student's solution matches the ideal response."
+
+@router.post("/evaluate/similarity/", summary="Evalulate similarity", description=similarity_desc)
 def evaluate_submission(request: SimilarityRequest):
     """
     Computes cosine similarity between the ideal solution and student submission.
@@ -56,7 +60,9 @@ class EvaluationRequest(BaseModel):
     sbert_weight: float = 0.7
     tfidf_weight: float = 0.3
 
-@router.post("/evaluate/parameters/", summary="Evaluate parameters", description="Evaluate a student submission based on multiple parameters using both SBERT and TF-IDF")
+parameters_desc = "Evaluate a student submission based on multiple parameters using both SBERT and TF-IDF. The system generates a score out of 100 for each parameter, and the weights for SBERT similarity and TF-IDF can be customized to adjust their influence on the final score."
+
+@router.post("/evaluate/parameters/", summary="Evaluate parameters", description=parameters_desc)
 def evaluate_submission(request: EvaluationRequest):
     """
     Evaluates a student submission based on multiple parameters using both SBERT and TF-IDF.
@@ -72,7 +78,7 @@ def evaluate_submission(request: EvaluationRequest):
             student_submission=request.student_submission,
             parameter_definitions=request.parameter_definitions,  # Pass the full dictionary
             sbert_weight=request.sbert_weight,
-            tfidf_weight=request.tfidf_weight
+            tfidf_weight=1 - request.sbert_weight
         )
         
         return {

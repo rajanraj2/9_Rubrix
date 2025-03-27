@@ -4,7 +4,9 @@ from tempfile import NamedTemporaryFile
 
 router = APIRouter()
 
-@router.post("/transcribe/")
+transcribe_desc = "API endpoint to extract text from uploaded files. It supports multi-format files including audio, video, images, PDF, DOCX, text, etc. Additionally, it enables multilingual text extraction for languages such as English, Hindi, Urdu, Bengali, and more."
+
+@router.post("/transcribe/", summary="Transcribe text from uploaded files", description=transcribe_desc)
 async def transcribe_file(file: UploadFile = File(...)):
     """API endpoint to extract text from uploaded files."""
     

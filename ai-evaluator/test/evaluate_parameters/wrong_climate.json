@@ -1,0 +1,14 @@
+{
+    "problem_statement": "Climate change has become one of the most pressing global challenges of our time. Rising temperatures, extreme weather events, and environmental degradation are significantly impacting ecosystems, human health, and economies worldwide. One of the major contributors to climate change is carbon emissions from industrial activities, transportation, and deforestation. Despite international efforts, reducing carbon footprints remains a challenge due to a lack of sustainable alternatives, economic constraints, and limited public awareness. To address this, governments, organizations, and researchers are actively seeking innovative solutions that promote renewable energy adoption, sustainable urban planning, and green technologies. The goal is to transition towards a low-carbon economy while maintaining economic growth and social well-being.",
+    
+    "parameter_definitions": {
+      "feasibility": "How practical and achievable is the proposed solution within existing technological and economic constraints?",
+      "impact": "What is the potential effect or influence of the proposed solution on reducing carbon emissions?",
+      "innovation": "How unique, creative, and forward-thinking is the approach compared to existing solutions?"
+    },
+    
+    "student_submission": "Eating fruits the right way can maximize their nutritional benefits and improve digestion:\n\n1. **Choose Fresh and Seasonal Fruits**\n   - Opt for organic and seasonal fruits to get the best taste and nutrients.\n   - Avoid overly ripe or chemically ripened fruits.\n\n2. **Wash Properly**\n   - Rinse fruits under running water to remove pesticides and dirt.\n   - For fruits with edible skins (apples, grapes, berries), soak in saltwater or vinegar solution.\n\n3. **Eat on an Empty Stomach**\n   - Consuming fruits in the morning or as a snack between meals aids digestion.\n   - Avoid eating fruits immediately after a heavy meal to prevent bloating.\n\n4. **Eat Whole Instead of Juicing**\n   - Whole fruits provide fiber, which helps in digestion and satiety.\n   - If juicing, consume fresh juice without adding sugar or straining fiber.\n\n5. **Pair Wisely**\n   - Avoid mixing acidic fruits (oranges, pineapples) with sweet fruits (bananas, dates).\n   - Combine fruits with nuts or yogurt for balanced nutrition.\n\n6. **Avoid Eating Fruits at Night**\n   - Eating fruits late at night may cause acidity or sugar spikes.\n   - If necessary, opt for light fruits like berries or melons.\n\n7. **Moderation is Key**\n   - Overeating fruits can lead to excessive sugar intake.\n   - Maintain a balanced diet by combining fruits with vegetables, proteins, and healthy fats.\n\nFollowing these tips ensures maximum benefits from fruits while maintaining overall digestive health.",
+    
+    "sbert_weight": 0.7,
+    "tfidf_weight": 0.3
+}
