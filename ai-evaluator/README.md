@@ -15,6 +15,8 @@
 This backend uses **LangChain, Hugging Face Transformers, and Whisper AI** for intelligent evaluation.
 
 ---
+![screenshot of swagger ui](screenshot.png)
+
 
 ## ⚙️ Features
 
