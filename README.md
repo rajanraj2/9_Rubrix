@@ -12,7 +12,16 @@ Rubrix utilizes a modern microservices architecture with five key components:
 4. **Worker**: Asynchronous job processor connecting the backend and micro service via Redis queues
 5. **AI Evaluator**: Advanced machine learning service providing detailed assessment of submissions
 
-![Architecture Diagram](<link>)
+## 🔗 Links & Images
+
+[Demo Video](https://www.youtube.com/watch?v=jDF60U8n-lI)  
+[AI Evaluator Video](https://www.youtube.com/watch?v=7UK-cMFd2So)  
+[Context, Container, Component Level Diagram (Google Drive)](https://drive.google.com/drive/folders/1k30jOi6NEXNbbQI97TGeks7KgcuzrV5e?usp=drive_link)
+
+| ![AI Evaluator](./home_page.png) | ![Demographics](./demographics.png) | ![FastAPI Backend](./leaderboard.jpg) | ![Home Page](./Fastapi-backend.png) |
+|--------------------------------------|------------------------------------|-------------------------------------------|-------------------------------|
+| ![Leaderboard](./ai_evaluator.png) | ![Context Diagram](./Rubrix_Level_1_Context_Level_Diagram.jpg) | ![Container Diagram](./Rubrix_Level_2_Container_Level_Diagram.jpg) | ![Component Diagram](./Rubrix_Level_3_Component_level_Diagram.jpg) |
+
 
 ## ✨ Key Features
 
